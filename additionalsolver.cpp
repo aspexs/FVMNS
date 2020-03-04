@@ -442,14 +442,14 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
     return ret;
 }
 
-QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrder(Matrix F1, Matrix F2, Matrix F3, Matrix U1old, Matrix U2old, Matrix U3old, double dt, double delta_h)
+QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrder(Matrix F1, Matrix F2, Matrix F3,  Matrix U1old, Matrix U2old, Matrix U3old, double dt, double delta_h)
 {
     int len = F1.size();
     Matrix rf;
     for(double i = 0; i < len; i++)
         rf.push_back(i);
     rf = rf * delta_h;
-    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1);
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
     auto temp_rfL = rf; temp_rfL.removeLast();
     auto temp_rfR = rf; temp_rfR.removeFirst();
     auto temp = Matrix::REVERSE(temp_rfR - temp_rfL) * dt;
@@ -460,6 +460,27 @@ QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrder(Matrix 
         U3new[i+1] = U3old[i+1] - temp[i]*(F3[i+1] - F3[i]);
     }
     return {U1new, U2new, U3new};
+}
+
+QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrderForCO22(Matrix F1, Matrix F2, Matrix F3,Matrix F4,  Matrix U1old, Matrix U2old, Matrix U3old,Matrix U4old , double dt, double delta_h)
+{
+    int len = F1.size();
+    Matrix rf;
+    for(double i = 0; i < len; i++)
+        rf.push_back(i);
+    rf = rf * delta_h;
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
+    auto temp_rfL = rf; temp_rfL.removeLast();
+    auto temp_rfR = rf; temp_rfR.removeFirst();
+    auto temp = Matrix::REVERSE(temp_rfR - temp_rfL) * dt;
+    for(int i = 0 ; i < temp.size(); i++)
+    {
+        U1new[i+1] = U1old[i+1] - temp[i]*(F1[i+1] - F1[i]);
+        U2new[i+1] = U2old[i+1] - temp[i]*(F2[i+1] - F2[i]);
+        U3new[i+1] = U3old[i+1] - temp[i]*(F3[i+1] - F3[i]);
+        U4new[i+1] = U4old[i+1] - temp[i]*(F4[i+1] - F4[i]);
+    }
+    return {U1new, U2new, U3new, U4new};
 }
 
 double AdditionalSolver::shareViscositySuperSimple(double startT, double currentT, double density, double pressure)

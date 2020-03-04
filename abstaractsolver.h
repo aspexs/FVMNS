@@ -53,6 +53,7 @@ protected:
     QMutex mutex;
 signals:
    void updateGraph(QVector<double> x, QVector<double> y, double lambda = 1);
+   void updateAdditionalGraph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateTime(double time);
 };
 

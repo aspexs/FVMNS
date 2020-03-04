@@ -32,7 +32,6 @@ void ArgonSolver::solve()
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
         solveFlux(U1L, U2L, U3L, U1R, U2R, U3R);
-
         auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,U1, U2,U3,dt,delta_h);
         U1 = res[0];
         U2 = res[1];

@@ -74,6 +74,8 @@ public:
 
     QVector<QVector<double>> SolveEvolutionExplFirstOrder(Matrix F1,   Matrix F2,    Matrix F3, Matrix U1old, Matrix U2old, Matrix U3old,
                                                           double dt, double delta_h);
+    QVector<QVector<double>> SolveEvolutionExplFirstOrderForCO22(Matrix F1,   Matrix F2,    Matrix F3, Matrix F4, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old,
+                                                                 double dt, double delta_h);
 signals:
     void completeSolution();
 public:

@@ -123,6 +123,7 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     disconnect(ui->pushButton_pause, SIGNAL(clicked()), this, SLOT(pause()));
 
     connect(solver, SIGNAL(updateGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updatePlot(QVector<double>, QVector<double>, double)));
+     connect(solver, SIGNAL(updateAdditionalGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updateAdditionalPlot(QVector<double>, QVector<double>, double)));
     connect(solver, SIGNAL(updateTime(double)), this, SLOT(updateTime(double)));
     connect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
     connect(ui->pushButton_cancel,  SIGNAL(clicked()), this, SLOT(cancal()));
@@ -226,6 +227,15 @@ void Widget::updatePlot(QVector<double> x, QVector<double> y, double lambda)
     chartView->repaint();
     repaint();
     update();
+}
+
+void Widget::updateAdditionalPlot(QVector<double> x, QVector<double> y, double lambda)
+{
+     chart->setAdditionalData(x, y, lambda);
+     chart->update();
+     chartView->repaint();
+     repaint();
+     update();
 }
 
 void Widget::updateTime(double time)

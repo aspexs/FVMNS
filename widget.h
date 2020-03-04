@@ -39,6 +39,7 @@ private slots:
 
     void on_comboBox_timeStep_currentIndexChanged(int index);
     void updatePlot(QVector<double> x, QVector<double> y, double lambda);
+    void updateAdditionalPlot(QVector<double> x, QVector<double> y, double lambda);
     void updateTime(double time);
     void on_pushButton_start_clicked();
 

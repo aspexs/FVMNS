@@ -20,15 +20,17 @@ public slots:
 private:
     QList<double> CvibrMass;
     QList<double> EnergyVibr;
+     QList<double> Energy;
     QList<double> EnergyTr_Rot;
     double energyStartTemp;
     double energyStepTemp;
 
     double CVibrStartTemp;
     double CVibrStepTemp;
+    QVector<double> Txx, Tvv, pres;
 
     double getEnergyVibrTemp(double energy);
-
+  double getEnergyTemp(double energy);
     double getVibrTemp(double CVibr);
 };
 

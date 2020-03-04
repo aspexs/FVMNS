@@ -15,8 +15,10 @@ public:
 
 public slots:
     void setData(QVector<double> x, QVector<double> y, double lambda = 1);
+    void setAdditionalData(QVector<double> x, QVector<double> y, double lambda = 1);
 private:
     QLineSeries *m_series;
+    QLineSeries *a_series;
     QValueAxis *m_axis;
     qreal m_x;
 
