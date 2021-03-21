@@ -40,6 +40,8 @@ struct macroParam
     double temp         = 0;
     double tempIntr     = 0;
     double soundSpeed   = 0;
+    bool isLeftContact = false;
+    QString gas         ="CO2";
 };
 struct solverParams
 {
@@ -215,7 +217,7 @@ public:
     {
         QVector<double> output;
         for(int i = 0; i < div.size(); i ++)
-             output.push_back(1/div[i]);
+             output.push_back(1.0/div[i]);
         return output;
     }
 };

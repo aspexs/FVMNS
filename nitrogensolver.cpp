@@ -15,8 +15,10 @@ void NitrogenSolver::prepareSolving()
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
     leftParam.soundSpeed = sqrt(solParam.Gamma*leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-
-    rightParam = additionalSolver.BoundaryCondition[typeBC](leftParam, solParam);
+    rightParam.density = ((solParam.Gamma + 1)* pow(solParam.Ma,2))/(2 + (solParam.Gamma -1)* pow(solParam.Ma,2))*leftParam.density;
+    rightParam.pressure = (pow(solParam.Ma,2) * 2* solParam.Gamma - (solParam.Gamma - 1))/((solParam.Gamma +1))*leftParam.pressure;
+    rightParam.temp = rightParam.pressure/(rightParam.density*UniversalGasConstant/molMass);
+    auto rightParam2 = additionalSolver.BoundaryCondition[typeBC](leftParam, solParam);
     rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
 
     for(auto i  = 1; i < solParam.NumCell+1; i++)
@@ -106,18 +108,18 @@ void NitrogenSolver::calcFliux()
         auto point = rezultAfterPStart[i];
         double tempL = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
         double tempR = right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
-        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h*2;
+        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
         //auto du_dx = (right_velocity[i] - point.velocity)/delta_h*2;
         //auto du_dx = (point.velocity - left_velocity[i])/delta_h*2;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
         double Pr = 2.0/3;
         double etta = additionalSolver.shareViscosity[typeShareVisc](leftParam.temp, Tx,0,0);
-        double zetta =additionalSolver.bulkViscosity[typeBulkVisc](0,Tx,point.density, point.pressure);
+        double zetta = 0;//additionalSolver.bulkViscosity[typeBulkVisc](0,Tx,point.density, point.pressure);
         double G =  (4.0/3*etta + zetta)*du_dx;
         double k = solParam.Gamma*UniversalGasConstant/molMass*etta/(solParam.Gamma-1)/Pr;
         //qDebug() << G << Tx << du_dx;
-        double dt_dx = (tempR - tempL)/delta_h*2;
+        double dt_dx = (tempR - tempL)/delta_h;
         //double dt_dx = (tempR - Tx)/delta_h*2;
         //double dt_dx = (Tx - tempL)/delta_h*2;
         double q =   -k*dt_dx;
@@ -143,7 +145,11 @@ void NitrogenSolver::solve()
         }
         Matrix velosity = U2/U1;
         auto pressure = (U3 - Matrix::POW(velosity,2)*0.5*U1)*(solParam.Gamma - 1);
-        double dt = additionalSolver.TimeStepSolution[typeTimeStepSolution](velosity, U1, pressure, delta_h,solParam,U3);
+        Matrix c = Matrix::SQRT(pressure*solParam.Gamma/U1);
+        auto temp = velosity + c;
+        auto max =*std::max_element(temp.begin(), temp.end());
+        double dt = solParam.CFL*pow(delta_h,1)/max;
+        //double dt = additionalSolver.TimeStepSolution[typeTimeStepSolution](velosity, U1, pressure, delta_h,solParam,U3);
         timeSolvind.push_back(dt);
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
@@ -154,16 +160,16 @@ void NitrogenSolver::solve()
         auto U3R = U3; U3R.removeFirst();
         solveFlux(U1L, U2L, U3L, U1R, U2R, U3R);
 
-        auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,U1, U2,U3,dt,delta_h);
+        auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
         U1 = res[0];
         U2 = res[1];
         U3 = res[2];
         solParam.typeRightBorder = 1;
-        U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
+        U1[0]=U1[1];   U1[U1.size() - 1] =rightParam.density;
         U2[0]=solParam.typeLeftBorder*U2[1];
-        U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
-        U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
-
+        U2[U2.size()-1]= rightParam.density*rightParam.velocity;
+        U3[0]=U3[1];   //U3[U3.size() - 1] =U3[U3.size() - 2];
+        U3[U3.size() - 1] = rightParam.pressure/(solParam.Gamma-1)+0.5*pow(rightParam.velocity,2)*rightParam.density;
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);

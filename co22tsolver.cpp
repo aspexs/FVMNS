@@ -39,21 +39,21 @@ Co22TSolver::Co22TSolver(QObject *parent): AbstaractSolver(parent)
             CvibrMass.push_back(line[1].toDouble());
         }
 
-        QTextStream outAllEnergy(&fileAllEnergy);
-        line = outAllEnergy.readLine().split(";");
-        energyStartTemp = line[0].toDouble();
-        Energy.push_back(line[1].toDouble());
-        line = outAllEnergy.readLine().split(";");
-        energyStepTemp = line[0].toDouble() - energyStartTemp;
-        Energy.push_back(line[1].toDouble());
-        while (!outAllEnergy.atEnd())
-        {
-           QStringList line = outAllEnergy.readLine().split(";");
-           if(line.size() != 2)
-               break;
+//        QTextStream outAllEnergy(&fileAllEnergy);
+//        line = outAllEnergy.readLine().split(";");
+//        energyStartTemp = line[0].toDouble();
+//        Energy.push_back(line[1].toDouble());
+//        line = outAllEnergy.readLine().split(";");
+//        energyStepTemp = line[0].toDouble() - energyStartTemp;
+//        Energy.push_back(line[1].toDouble());
+//        while (!outAllEnergy.atEnd())
+//        {
+//           QStringList line = outAllEnergy.readLine().split(";");
+//           if(line.size() != 2)
+//               break;
 
-           Energy.push_back(line[1].toDouble());
-        }
+//           Energy.push_back(line[1].toDouble());
+//        }
     }
     fileEnergy.close();
     fileCVibr.close();
@@ -65,25 +65,33 @@ void Co22TSolver::prepareSolving()
     U2.resize(solParam.NumCell+2);
     U3.resize(solParam.NumCell+2);
     U4.resize(solParam.NumCell+2);
+    R.resize(solParam.NumCell+2);
 
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
-    double Cv = 5.0/2 * kB/mass + CvibrMass[(leftParam.temp - CVibrStartTemp)/CVibrStepTemp];
+    double Cv = 5.0/2 * kB/mass;
     double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
     leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
     leftParam.tempIntr = leftParam.temp;
+
     rightParam = additionalSolver.BoundaryCondition[typeBC+1](leftParam, solParam);
     rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
+//////////////////
+// rightParam.temp = 500.5;
+// rightParam.tempIntr = 500.5;
+// rightParam.pressure = 30.259216085384180;
+// rightParam.density = rightParam.pressure /(UniversalGasConstant/molMass * rightParam.temp);
+// rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
+    /////////////
 
-    double leftEvibr = additionalSolver.vibrEnergy(0,leftParam.tempIntr);
+    double leftEvibr = additionalSolver.vibrEnergy(0,leftParam.temp);
     double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr;
-
-    double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.tempIntr);
+    double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
     double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;
 
     for(auto i  = 1; i < solParam.NumCell+1; i++)
     {
-        if(i < solParam.NumCell/2+1)
+        if(i < 10)
         {
             U1[i] = leftParam.density;
             U2[i] = leftParam.density*leftParam.velocity;
@@ -94,7 +102,7 @@ void Co22TSolver::prepareSolving()
         else
         {
             U1[i] = rightParam.density;
-            U2[i] =  rightParam.density*rightParam.velocity;
+            U2[i] = rightParam.density*rightParam.velocity;
             U3[i] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
             U4[i] = rightParam.density*rightEVibr;
         }
@@ -106,8 +114,11 @@ void Co22TSolver::prepareSolving()
     x.push_back(0+0.5*delta_h);
     for(auto i = 1; i < solParam.NumCell; i++)
         x.push_back(x[i-1] + delta_h);
+
+
     x.push_back(x_right);
     x.push_front(0);
+
     U1[0]=U1[1];
     U2[0]=solParam.typeLeftBorder*U2[1];
     U3[0]=U3[1];
@@ -125,10 +136,12 @@ void Co22TSolver::prepareSolving()
     F2.resize(solParam.NumCell+1);
     F3.resize(solParam.NumCell+1);
     F4.resize(solParam.NumCell+1);
+    E__.resize(U1.size());
+    R.resize(solParam.NumCell+1);
     rezultAfterPStart.resize(solParam.NumCell+1);
 }
 
-void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR)
+void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl , Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr, Matrix EnergyFull)
 {
     left_density   = U1L;
     right_density  = U1R;
@@ -136,16 +149,14 @@ void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL
     right_velocity = U2R / right_density;
     left_pressure  = pressureL;
     right_pressure = pressureR;
+    this->Tl = Tl;
+    this->Tr = Tr;
     left_Tv = TvL;
     right_Tv = TvR;
-    Txx.clear();
-    Tvv.clear();
-    pres.clear();
-    Txx.resize(U1.size());
-    Tvv.resize(U1.size());
-    pres.resize(U1.size());
+
     calcRiemanPStar();
     calcFliux();
+    calcR(U1,U2,U3,U4);
 }
 
 void Co22TSolver::calcRiemanPStar()
@@ -158,20 +169,16 @@ void Co22TSolver::calcRiemanPStar()
         mutex.lock();
         left.density = left_density[i];
         left.velocity = left_velocity[i];
-        left.pressure = left_pressure[i];
         right.density = right_density[i];
         right.velocity = right_velocity[i];
+        left.pressure = left_pressure[i];
         right.pressure = right_pressure[i];
+        left.tempIntr = left_Tv[i];
+        right.tempIntr = right_Tv[i];
         mutex.unlock();
-        auto tempL = left.pressure /(UniversalGasConstant/molMass * left.density);
-        auto tempR = right.pressure /(UniversalGasConstant/molMass * right.density);
-        mutex.lock();
-        auto CvL = 5.0/2 * kB/mass + CvibrMass[(tempL - CVibrStartTemp)/CVibrStepTemp];
-        auto CvR = 5.0/2 * kB/mass + CvibrMass[(tempR - CVibrStartTemp)/CVibrStepTemp];
-        mutex.unlock();
-        auto GammaL = (UniversalGasConstant/molMass + CvL)/CvL;
-        auto GammaR = (UniversalGasConstant/molMass + CvR)/CvR;
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolverCorrect(left,right, GammaL, GammaR);
+        auto Cv = 5.0/2 * kB/mass;
+        auto Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
+        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right,Gamma);
         return;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
@@ -185,50 +192,44 @@ void Co22TSolver::calcFliux()
     {
         mutex.lock();
         auto point = rezultAfterPStart[i];
-        double tempL = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
-        double tempR = right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
-        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
-        auto tempLtv = left_Tv[i];//EnergyVibr[(left_Tv[i] - energyStartTemp)/energyStepTemp];
-        auto tempRtv = right_Tv[i];//EnergyVibr[(right_Tv[i] - energyStartTemp)/energyStepTemp];
-        double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
-        double Tv = (tempRtv + tempLtv)/2;
+        double tempL = Tl[i];
+        double tempR = Tr[i];
+       auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
+        auto tempLtv = left_Tv[i];
+        auto tempRtv = right_Tv[i];
+        double Tx =  point.pressure/(point.density*UniversalGasConstant/molMass);
+        double Tv = tempLtv;
+
+        double energyVibr =  additionalSolver.vibrEnergy(0,Tv);
         pres[i] = point.pressure;
-        Txx[i] = Tx;
-        Tvv[i] = Tv;
         mutex.unlock();
 
+        double etta = additionalSolver.shareViscosityOmega(0,Tx);
+        //double Evibr = additionalSolver.vibrEnergy(0,Tx);
+        double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
 
-        double etta = additionalSolver.shareViscosity[typeShareVisc](leftParam.temp, Tx,0,0);
-        double Cvibr = 0;
-        double Evibr = 0;
-        double Evibr2 = 0;
-        double Etr_rot = 5.0/2*kB*Tx/mass;
-
-        if((Tx - CVibrStartTemp)/CVibrStepTemp < CvibrMass.size())
-        {
-            Cvibr = CvibrMass[(Tx - CVibrStartTemp)/CVibrStepTemp];
-            Evibr2 =  EnergyVibr[(Tv - energyStartTemp)/energyStepTemp];
-            Evibr =  EnergyVibr[(Tx - energyStartTemp)/energyStepTemp];
-        }
-        else
-        {
-            Cvibr = CvibrMass.last();
-            Evibr = EnergyVibr.last();
-            Evibr2 =EnergyVibr.last();
-        }
-        double zetta =additionalSolver.bulkViscosity[typeBulkVisc](Cvibr,Tx,point.density, point.pressure);
-        double P =  (4.0/3*etta + zetta)*du_dx;
+        double P = (4.0/3*etta + zetta)*du_dx;
         double dt_dx = (tempR - tempL)/delta_h;
         double dtv_dx = (tempRtv - tempLtv)/delta_h;
-        double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv) * dtv_dx;
-        double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
-        double tauVibr = additionalSolver.TauVibr(Tv, point.pressure);
 
-        double entalpi = Etr_rot + Evibr + point.pressure/point.density + pow(point.velocity,2)/2;
-        F1[i] = (point.density * point.velocity);
-        F2[i] = (F1[i]*point.velocity + point.pressure -P);
-        F3[i] = (F1[i]*entalpi - P*point.velocity + qVibr+qTr);
-        F4[i] =  qVibr - point.density/tauVibr*(Evibr2 - Evibr);
+        double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv)* dtv_dx;
+        double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
+
+        double Etr_rot = 5.0/2*kB*Tx/mass;
+       // double Evibr =  AdditionalSolver::vibrEnergy(0,Tx);
+
+        double entalpi = Etr_rot + energyVibr + point.pressure/point.density + pow(point.velocity,2)/2;
+        E__[i] = entalpi;
+        //double tauVibr = additionalSolver.TauVibr(Tx,left_pressure[i]);
+        //auto deltaE = (additionalSolver.vibrEnergy(0,Tx) - additionalSolver.vibrEnergy(0,Tv));
+
+        //auto r = left_density[i]/tauVibr*deltaE;
+        F1[i] = point.density * point.velocity;
+        F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
+        F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr + qTr;
+
+        F4[i] = point.density * point.velocity*energyVibr + qVibr;// - r;
+        //R[i] = r;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -250,27 +251,33 @@ void Co22TSolver::solve()
         auto EVibr = U4/U1;
         auto energyFull = U3/U1 - Matrix::POW(velosity,2)/2;
         auto E_tr_rot = energyFull - EVibr;
-        Matrix T, Tv;
+        T.clear();
+        Tv.clear();
         Matrix gammas;
         Matrix pressure;
         for (auto energy: EVibr)
-            Tv.push_back(getEnergyVibrTemp(energy));
-
+        {
+            auto TempTv = getEnergyVibrTemp(energy);
+            Tv.push_back(TempTv);
+        }
+        double Cv = 5.0/2 * kB/mass;
         for (auto energy: E_tr_rot)
         {
             T.push_back(energy*2*mass/(5*kB));
-            double Cv = 5.0/2 * kB/mass + CvibrMass[(T.last() - CVibrStartTemp)/CVibrStepTemp];
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
         pressure = U1*T*UniversalGasConstant/molMass;
-        double dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
-        timeSolvind.push_back(dt);
-
+        pres = pressure;
+        dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
+        timeSolvind.push_back(dt+timeSolvind.last());
+        //pres = pressure;
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
         auto U3L = U3; U3L.removeLast();
         auto pressureL = pressure;
         auto TvL = Tv;
+        auto Templ = T;
+        Templ.removeLast();
         pressureL.removeLast();
         TvL.removeLast();
 
@@ -279,11 +286,13 @@ void Co22TSolver::solve()
         auto U3R = U3; U3R.removeFirst();
         auto pressureR = pressure;
         auto TvR = Tv;
+        auto TempR = T;
+        TempR.removeFirst();
         pressureR.removeFirst();
         TvR.removeFirst();
 
-        solveFlux(U1L, U2L, pressureL,TvL, U1R, U2R,pressureR, TvR);
-        auto res = additionalSolver.SolveEvolutionExplFirstOrderForCO22(F1, F2,F3,F4, U1, U2,U3, U4,dt,delta_h);
+        solveFlux(U1L, U2L, pressureL,TvL,Templ, U1R, U2R,pressureR, TvR, TempR, energyFull);
+        auto res = additionalSolver.SEEFOForCO2(F1, F2,F3,F4, U1, U2,U3, U4,dt,delta_h,{},{},{},{},R);
 
         auto copyU1 = U1;
         auto copyU2 = U2;
@@ -293,37 +302,64 @@ void Co22TSolver::solve()
         U2 = res[1];
         U3 = res[2];
         U4 = res[3];
-        U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
-        U2[0]=solParam.typeLeftBorder*U2[1];
-        U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
-        U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
-        U4[0]=U4[1];   U4[U4.size() - 1] =U4[U4.size() - 2];
+        R = res[4];
+        error = res[5].first();
+        ////    Вариант расчета глупый, идет простой снос значений предпоследней ячеки
+        //U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
+        //U2[0]=solParam.typeLeftBorder*U2[1];
+        //U2[U2.size()-1]=solParam.typeRightBorder*U2[U2.size()-2];
+        //U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
+        //U4[0]=U4[1];   U4[U4.size() - 1] =U4[U4.size() - 2];
 
-        Txx.last() =  Txx[Txx.size() -2];
-        Tvv.last() =  Tv[Tv.size() -2];
-        pres.last() =  pres[pres.size() -2];
+        ////    Вариант расчета при фиксированном правом давлении
+        U1[0]=U1[1];                         U1[U1.size() - 1] = U1[U1.size() - 2];
+        U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
+        U4[0]=U4[1];                         U4[U4.size() - 1] = U4[U4.size() - 2];
+
+        U3[0]=U3[1];                         //U3[U3.size() - 1] = //U3[U3.size() - 2];
+        E__[E__.size() -1] = E__[E__.size() -2];
+        auto T = rightParam.pressure* molMass/(UniversalGasConstant*U1.last());
+        auto Tv = getEnergyVibrTemp(U4.last()/U1.last());
+
+        double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
+        double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
+        U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
+        ////    Вариант расчета при фиксированной правой части
+        //double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
+        //double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;
+        //U1[0]=U1[1];                         U1[U1.size() - 1] = rightParam.density;// U1[U1.size() - 2];
+        //U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size() - 1]= rightParam.density* rightParam.velocity;// solParam.typeRightBorder*U2[U2.size()-2];
+        //U3[0]=U3[1];                         U3[U3.size() - 1] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
+        //U4[0]=U4[1];                         U4[U4.size() - 1] = rightParam.density*rightEVibr;
+        //R[0]=R[1];   R[R.size() - 1] =R[R.size() - 2];
 
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);
-            emit updateTime(timeSolvind.last());
+            emit updateTime(timeSolvind.last(), error);
+
             QThread::msleep(200);
         }
-        if(timeSolvind.last() >solParam.t_fin)
+        if(timeSolvind.last() > solParam.t_fin)
+        {
+            setTypePlot(solParam.typePlot);
+            emit updateTime(timeSolvind.last(), error);
+            QThread::msleep(200);
             break;
+        }
     }
 }
 
 void Co22TSolver::setTypePlot(int i)
 {
     solParam.typePlot = i;
-    QVector<double> values, additionalValues;
+    QVector<double> values, additionalValues ;
     switch (solParam.typePlot)
     {
     case 0: values = pres;break;
     case 1: values = U1; break;
-    case 2: values = Tvv;break;
-    case 3: values = Txx; additionalValues = Tvv; break;
+    case 2: values = U2/U1;break;
+    case 3: values = T; additionalValues = Tv; break;
 
     default: values = U1; break;
     }
@@ -331,22 +367,41 @@ void Co22TSolver::setTypePlot(int i)
     emit updateAdditionalGraph(x, additionalValues, solParam.lambda);
 }
 
+void Co22TSolver::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4)
+{
+    Matrix TV, T,pressure;
+    auto tempU1 = U1;
+    auto tempU2 = U2;
+    auto velocity = tempU2/U1;
+    auto tempU3 = U3;
+    auto tempU4 = U4;
+    auto EVibr = tempU4/U1;
+    auto energyFull = tempU3/U1 - Matrix::POW(velocity,2)/2;
+    auto E_tr_rot = energyFull - EVibr;
+    for (auto i = 0; i < EVibr.size(); i++)
+        TV.push_back(getEnergyVibrTemp(EVibr[i]));
+    for (auto i = 0; i < E_tr_rot.size(); i++)
+        T.push_back(E_tr_rot[i]*2*mass/(5*kB));
+
+    pressure = tempU1*T*UniversalGasConstant/molMass;
+    QFutureWatcher<void> futureWatcher;
+    const std::function<void(int&)> calc = [&](int& i)
+    {
+        double tauVibr = additionalSolver.TauVibr(T[i],pressure[i]);
+        auto deltaE = (additionalSolver.vibrEnergy(0,T[i]) - EVibr[i]);
+        R[i]=tempU1[i]/tauVibr*deltaE;
+    };
+    futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calc));
+    futureWatcher.waitForFinished();
+}
+
 double Co22TSolver::getEnergyVibrTemp(double energy)
 {
     for(auto i = 0 ; i < EnergyVibr.size(); i++)
         if( energy < EnergyVibr[i])
-            return i  * energyStepTemp + energyStartTemp;
+            return (i+1)  * energyStepTemp + energyStartTemp;
     return (EnergyVibr.size()-1) * energyStepTemp + energyStartTemp;
 }
-
-double Co22TSolver::getEnergyTemp(double energy)
-{
-    for(auto i = 0 ; i < Energy.size(); i++)
-        if( energy < Energy[i])
-            return i  * energyStepTemp + energyStartTemp;
-    return (Energy.size()-1) * energyStepTemp + energyStartTemp;
-}
-
 
 double Co22TSolver::getVibrTemp(double CVibr)
 {

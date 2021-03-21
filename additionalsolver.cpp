@@ -4,7 +4,7 @@
 #include <QFutureWatcher>
 #include <QThread>
 #include <QtConcurrent>
-
+#include <QProcess>
 extern double sigma;
 extern double epsilonDevK;
 extern double molMass;
@@ -244,17 +244,71 @@ macroParam AdditionalSolver::ExacRiemanSolver(macroParam left, macroParam right,
     return ret;
 }
 
-macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam right, double GammaL, double GammaR)
+macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam right, double GammaL, double GammaR, double lambda)
 {
     double maxIteration = 40; // макс число итераций
     double TOL=1e-8;
-    double lambda = 0; // линия на грани КО
+    //double lambda = 0; // линия на грани КО
     macroParam ret;
     double left_soundspeed=sqrt ( GammaL*left.pressure/left.density );
     double right_soundspeed=sqrt( GammaR*right.pressure/right.density);
+    double left_vacuum_front_speed = left.velocity + 2.0 * left_soundspeed / ( GammaL - 1.0 );
+    double right_vacuum_front_speed = right.velocity - 2.0 * right_soundspeed / ( GammaR - 1.0 );
+    double critical_speed =  left_vacuum_front_speed - right_vacuum_front_speed;
 
+    if ( critical_speed < 0.0 ) //% образуется зона вукуума
+    {
+        double left_head_speed = left.velocity - left_soundspeed;
+        double left_tail_speed = left_vacuum_front_speed;
+        double right_head_speed = right.velocity + right_soundspeed;
+        double right_tail_speed = right_vacuum_front_speed;
+        //%-----------------------
+        bool is_left_of_contact = lambda < left_tail_speed;
+        if ( is_left_of_contact )// % определяем где находится искомая линия lambda слева ли от контактного разрыва
+            if ( lambda < left_head_speed )
+            {
+                ret.density  = left.density;
+                ret.velocity = left.velocity;
+                ret.pressure = left.pressure;
+            }
+            else
+            {
+                //% left_rarefaction (4.56)
+                double temp1 = 2.0/ ( GammaL+1.0 ) + ( GammaL-1.0 ) / ( GammaL+1.0 ) /left_soundspeed *(left.velocity - lambda);
+                ret.density = left.density * pow(temp1,( 2.0/ ( GammaL-1.0 ) ));
+                ret.pressure = left.pressure *  pow(temp1,( 2.0*GammaL/ ( GammaL-1.0 ) ));
+                ret.velocity = 2.0/ ( GammaL+1.0 ) * ( left_soundspeed + ( GammaL-1.0 ) /2.0*left.velocity + lambda );
+            }
+        else
+        {
+            if ( lambda > right_tail_speed )
+                if ( lambda > right_head_speed )
+                {
+                    ret.density  = right.density;
+                    ret.velocity = right.velocity;
+                    ret.pressure = right.pressure;
+                }
+                else
+                    //%right_rarefaction (4.63)
+                {
+                    double temp1 =2.0/ ( GammaR+1.0 ) - ( GammaR-1.0 ) / ( GammaR+1.0 ) /right_soundspeed *(right.velocity - lambda);
+                    ret.density = right.density * pow(temp1,( 2.0/ ( GammaR-1.0 ) ));
+                    ret.pressure = right.pressure *  pow(temp1,(2.0*GammaR/ ( GammaR-1.0) ) );
+                    ret.velocity = 2.0/ ( GammaR+1.0 ) * ( -right_soundspeed + ( GammaR-1.0 ) /2.0*right.velocity + lambda);
+                }
+            else
+            {
+                //% u resides inside vaccum
+                ret.density=0.0;
+                ret.velocity=0.0;
+                ret.pressure = 0.0;
+            }
+        }
+    }
+    else
+    {
     double p_star= 0.5*(left.pressure+right.pressure) +
-            0.125 * ( left.velocity-right.velocity ) *
+            0.125 * ( left.velocity+right.velocity ) *
             ( left.density+right.density ) *
             ( left_soundspeed+right_soundspeed );
     p_star=std::max(p_star,TOL);
@@ -361,12 +415,14 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                 ret.density  = left.density;
                 ret.velocity = left.velocity;
                 ret.pressure = left.pressure;
+                ret.tempIntr = left.tempIntr;
             }
             else  //% the u is behind the shock
             {
                 ret.density  = left_star_density;
                 ret.velocity = star_speed;
                 ret.pressure = p_star;
+                ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
             }
         }
         else // % the left wave is a rarefaction
@@ -376,6 +432,7 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                 ret.density  = left.density;
                 ret.velocity = left.velocity;
                 ret.pressure = left.pressure;
+                ret.tempIntr = left.tempIntr;
             }
             else
             {
@@ -385,12 +442,14 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                     ret.density = left.density *  pow(temp1, 2.0/( GammaL-1.0 ));
                     ret.pressure = left.pressure * pow(temp1, 2.0*GammaL/ ( GammaL-1.0));
                     ret.velocity = 2.0/ ( GammaL+1.0 ) * ( left_soundspeed + ( GammaL-1.0 ) /2.0*left.velocity + lambda);
+                    ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
                 }
                 else//  % the u is after the rarefaction
                 {
                     ret.density  = left_star_density;
                     ret.velocity = star_speed;
                     ret.pressure = p_star;
+                    ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
                 }
             }
         }
@@ -439,30 +498,11 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
             }
         }
     }
+            }
     return ret;
 }
 
-QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrder(Matrix F1, Matrix F2, Matrix F3,  Matrix U1old, Matrix U2old, Matrix U3old, double dt, double delta_h)
-{
-    int len = F1.size();
-    Matrix rf;
-    for(double i = 0; i < len; i++)
-        rf.push_back(i);
-    rf = rf * delta_h;
-    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
-    auto temp_rfL = rf; temp_rfL.removeLast();
-    auto temp_rfR = rf; temp_rfR.removeFirst();
-    auto temp = Matrix::REVERSE(temp_rfR - temp_rfL) * dt;
-    for(int i = 0 ; i < temp.size(); i++)
-    {
-        U1new[i+1] = U1old[i+1] - temp[i]*(F1[i+1] - F1[i]);
-        U2new[i+1] = U2old[i+1] - temp[i]*(F2[i+1] - F2[i]);
-        U3new[i+1] = U3old[i+1] - temp[i]*(F3[i+1] - F3[i]);
-    }
-    return {U1new, U2new, U3new};
-}
-
-QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrderForCO22(Matrix F1, Matrix F2, Matrix F3,Matrix F4,  Matrix U1old, Matrix U2old, Matrix U3old,Matrix U4old , double dt, double delta_h)
+QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrder(Matrix F1, Matrix F2, Matrix F3, Matrix F4,  Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double dt, double delta_h)
 {
     int len = F1.size();
     Matrix rf;
@@ -481,6 +521,314 @@ QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrderForCO22(
         U4new[i+1] = U4old[i+1] - temp[i]*(F4[i+1] - F4[i]);
     }
     return {U1new, U2new, U3new, U4new};
+}
+
+QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrderForCO22(Matrix F1, Matrix F2, Matrix F3,Matrix F4,
+                                                                                Matrix U1old, Matrix U2old, Matrix U3old,Matrix U4old ,
+                                                                                double dt, double delta_h, Matrix R)
+{
+    int len = F1.size();
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
+    const auto temp = dt/delta_h;
+    double sumDeltaF1 = 0, sumDeltaF2 = 0, sumDeltaF3 = 0, sumDeltaF4 = 0;
+    for(int i = 0 ; i < len-1; i++)
+    {
+        const auto deltaF1 = temp*(F1[i+1]  - F1[i]);
+        const auto deltaF2 = temp*(F2[i+1]  - F2[i]);
+        const auto deltaF3 = temp*(F3[i+1]  - F3[i]);
+        const auto deltaF4 = temp*(F4[i+1]  - F4[i]);
+        sumDeltaF1 += deltaF1;
+        sumDeltaF2 += deltaF2;
+        sumDeltaF3 += deltaF3;
+        sumDeltaF4 += deltaF4;
+        U1new[i+1] = U1old[i+1] - deltaF1;
+        U2new[i+1] = U2old[i+1] - deltaF2;
+        U3new[i+1] = U3old[i+1] - deltaF3;
+        U4new[i+1] = U4old[i+1] - deltaF4;// -  delta_h*dt*(R[i+1] - R[i]);
+    }
+    //U1new[0]= U1new[1];
+    //U2new[0]= U2new[1];
+    //U3new[0]= U3new[1];
+    //U4new[0]= U4new[1];
+    //U1new[len-1] = U1new[len-2];
+    //U2new[len-1] = U2new[len-2];
+    //U3new[len-1] = U3new[len-2];
+    //U4new[len-2] = U4new[len-3];
+    return {U1new, U2new, U3new, U4new};
+}
+
+QVector<QVector<double> > AdditionalSolver::SolveEvolutionExplFirstOrderForO2(Matrix F1, Matrix F2, Matrix F3,Matrix F4, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double dt, double delta_h)
+{
+    int len = F1.size();
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
+    auto temp = dt/delta_h;
+    for(int i = 0 ; i < len-1; i++)
+    {
+        U1new[i+1] = U1old[i+1] - temp*(F1[i+1] - F1[i]);
+        U2new[i+1] = U2old[i+1] - temp*(F2[i+1] - F2[i]);
+        U3new[i+1] = U3old[i+1] - temp*(F3[i+1] - F3[i]);
+        U4new[i+1] = U4old[i+1] - temp*(F4[i+1] - F4[i]);
+    }
+
+    //U1new[0] =U1new[1];
+    //U2new[0] =U2new[1];
+    //U3new[0] =U3new[1];
+    //U4new[0] =U4new[1];
+    return {U1new, U2new, U3new, U4new};
+}
+
+QVector<QVector<double> > AdditionalSolver::SEEFOForCO2(Matrix F1, Matrix F2, Matrix F3, Matrix F4, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double dt, double delta_h,
+                                                        Matrix F11, Matrix F22, Matrix F33, Matrix F44, Matrix R)
+{
+    int len = F1.size();
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1), U1(len + 1),U2(len + 1),U3(len + 1),U4(len + 1),Rnew(len + 1);
+    const auto temp = dt/delta_h;
+    const auto temp2 = pow(temp,2);
+    const auto temp3 = dt/delta_h/delta_h;
+    double sumDeltaF1 = 0, sumDeltaF2 = 0, sumDeltaF3 = 0, sumDeltaF4 = 0;
+    for(int i = 1 ; i < len; i++)
+    {
+//        auto Q1 = U1old[i] - temp*(F1[i] - F1[i-1]);
+//        auto Q1 = U1old[i] - temp*(F1[i] - F1[i-1]);
+//        auto Q1 = U1old[i] - temp*(F1[i] - F1[i-1]);
+//        auto Q1 = U1old[i] - temp*(F1[i] - F1[i-1]);
+//        //тут вычисляем
+//        auto Q = 0.5*(U1old[i] + Q1 + temp*())
+        const auto deltaF1 = temp*(F1[i]  - F1[i-1]);
+        const auto deltaF2 = temp*(F2[i]  - F2[i-1]);
+        const auto deltaF3 = temp*(F3[i]  - F3[i-1]);
+        const auto deltaF4 = temp*(F4[i]  - F4[i-1]);
+        sumDeltaF1 += deltaF1;
+        sumDeltaF2 += deltaF2;
+        sumDeltaF3 += deltaF3;
+        sumDeltaF4 += deltaF4;
+
+        U1new[i] =  U1old[i] - deltaF1;
+        U2new[i] =  U2old[i] - deltaF2;
+        U3new[i] =  U3old[i] - deltaF3;
+        U4new[i] =  U4old[i] - deltaF4 + dt*R[i];
+
+    }
+    return {U1new, U2new, U3new, U4new, Rnew, {sumDeltaF1+sumDeltaF2+sumDeltaF3+sumDeltaF4}};
+}
+
+double Sign1(double x)
+{
+    int cond  = (x>=0);
+    return  cond*1 + (1-cond)*(-1);
+}
+double SuperBee(double r, double omega)
+{
+    //int cond1 = (r>0);
+    //int cond2 = (r <= 0.5);
+    //int cond3 = (r>1);
+    //return (2*r*cond2 + (1 - cond2)*(cond3*qMin(qMin(2.0,r), 2.0/(1-omega+(1+omega)*r + 1e-12)) + (1-cond3)*1 ))*cond1;
+
+    auto cond1 = (r>0);
+    return ( qMin(2*r/(1+r + 1e-12), 2/(1-omega+(1+omega)*r + 1e-12) ) )*cond1;
+}
+double MUSCLlimiter(double r, double delta, double omega, int limType )
+{
+    auto phi = SuperBee(r,omega);
+   return phi*delta;
+}
+double getEnergyVibrTemp(QVector<double>EnergyVibr, double energy, double energyStepTemp, double energyStartTemp)
+{
+    for(auto i = 0 ; i < EnergyVibr.size(); i++)
+        if( energy < EnergyVibr[i])
+            return i  * energyStepTemp + energyStartTemp;
+    return (EnergyVibr.size()-1) * energyStepTemp + energyStartTemp;
+}
+macroParam point(double U1old, double U2old, double U3old, double U4old,QVector<double>EnergyVibr, double energyStepTemp, double energyStartTemp)
+{
+    macroParam p;
+    p.density = U1old;
+    p.velocity = U2old/U1old;
+    auto eVibr = U4old/U1old;
+    p.tempIntr = getEnergyVibrTemp(EnergyVibr,eVibr, energyStepTemp, energyStartTemp);
+    auto energy_TrRot = U3old/U1old -  p.velocity*p.velocity/2 - eVibr;
+    p.temp = energy_TrRot*2*mass/(5*kB);
+    p.pressure = U1old* p.temp*UniversalGasConstant/molMass;
+    return p;
+}
+QVector<Matrix> AdditionalSolver::SolveMUSCL_UL_UR(Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double Gamma, double dt_dx,QVector<double>EnergyVibr, double energyStepTemp, double energyStartTemp,int LimType, double omega)
+{
+    const auto TOL = 1e-12;
+    const auto len = U1old.size();
+
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1);
+
+    for(auto i = 1; i < len; i ++ )
+    {
+        U1new[i] = U1old[i] - U1old[i-1];
+        U2new[i] = U2old[i] - U2old[i-1];
+        U3new[i] = U3old[i] - U3old[i-1];
+        U4new[i] = U4old[i] - U4old[i-1];
+    }
+    U1new[0] = U1new[1];    U1new[len] = U1new[len-1];
+    U2new[0] = U2new[1];    U2new[len] = U2new[len-1];
+    U3new[0] = U3new[1];    U3new[len] = U3new[len-1];
+    U4new[0] = U4new[1];    U4new[len] = U4new[len-1];
+
+    for(auto i = 0; i < U1new.size(); i ++ )
+    {
+        int condition = U1new[i] < TOL;
+        U1new[i] = TOL*Sign1( U1new[i])*condition + (1 - condition)* U1new[i];
+
+        condition = U2new[i] < TOL;
+        U2new[i] = TOL*Sign1( U2new[i])*condition + (1 - condition)* U2new[i];
+
+        condition = U3new[i] < TOL;
+        U3new[i] = TOL*Sign1( U3new[i])*condition + (1 - condition)* U3new[i];
+
+        condition = U4new[i] < TOL;
+        U4new[i] = TOL*Sign1( U4new[i])*condition + (1 - condition)* U4new[i];
+    }
+
+    Matrix delta_i1, delta_i2, delta_i3, delta_i4, r1,r2,r3,r4;
+    for(auto i = 1; i < U1new.size(); i ++ )
+    {
+        delta_i1.push_back(0.5*(1.0+omega)*U1new[i-1] + 0.5*(1.0-omega)*U1new[i]); r1.push_back(U1new[i-1]/U1new[i]);
+         delta_i1[i-1] =  MUSCLlimiter(r1[i-1],delta_i1[i-1],omega,LimType);
+        delta_i2.push_back(0.5*(1.0+omega)*U2new[i-1] + 0.5*(1.0-omega)*U2new[i]); r2.push_back(U2new[i-1]/U2new[i]);
+         delta_i2[i-1] =  MUSCLlimiter(r2[i-1],delta_i2[i-1],omega,LimType);
+        delta_i3.push_back(0.5*(1.0+omega)*U3new[i-1] + 0.5*(1.0-omega)*U3new[i]); r3.push_back(U3new[i-1]/U3new[i]);
+         delta_i3[i-1] =  MUSCLlimiter(r3[i-1],delta_i3[i-1],omega,LimType);
+        delta_i4.push_back(0.5*(1.0+omega)*U4new[i-1] + 0.5*(1.0-omega)*U4new[i]); r4.push_back(U4new[i-1]/U4new[i]);
+         delta_i4[i-1] =  MUSCLlimiter(r4[i-1],delta_i4[i-1],omega,LimType);
+    }
+    Matrix U1BLeft = U1old - delta_i1*0.5;
+    Matrix U2BLeft = U2old - delta_i2*0.5;
+    Matrix U3BLeft = U3old - delta_i3*0.5;
+    Matrix U4BLeft = U4old - delta_i4*0.5;
+
+    Matrix U1BRight = U1old + delta_i1*0.5;
+    Matrix U2BRight = U2old + delta_i2*0.5;
+    Matrix U3BRight = U3old + delta_i3*0.5;
+    Matrix U4BRight = U4old + delta_i4*0.5;
+
+    Matrix uBLeft   = U2BLeft/U1BLeft;  //speeed
+    Matrix uBRight = U2BRight/U1BRight; //speeed
+
+    Matrix dF2, dF3,dF4;
+    for(auto i = 0; i < U1new.size(); i ++ )
+    {
+        auto pointL = point(U1BLeft[i], U2BLeft[i],U3BLeft[i],U4BLeft[i],EnergyVibr,energyStepTemp,energyStartTemp);
+        auto pointR = point(U1BRight[i], U2BRight[i],U3BRight[i],U4BRight[i],EnergyVibr,energyStepTemp,energyStartTemp);
+        auto df2_i = (pointL.density * pointL.velocity*pointL.velocity + pointL.pressure) - (pointR.density * pointR.velocity*pointR.velocity + pointR.pressure);
+        dF2.push_back(df2_i);
+        auto HL =  pointL.pressure/pointL.density + pointL.velocity* pointL.velocity/2 + 5.0/2*kB*pointL.temp/mass + AdditionalSolver::vibrEnergy(0,pointL.tempIntr);
+        auto HR =  pointR.pressure/pointR.density + pointR.velocity* pointR.velocity/2 + 5.0/2*kB*pointR.temp/mass + AdditionalSolver::vibrEnergy(0,pointR.tempIntr);
+        auto df3_i = (pointL.density * pointL.velocity*(HL)) - (pointR.density * pointR.velocity*(HR));
+        dF3.push_back(df3_i);
+        auto df4_i = (pointL.density * pointL.velocity*(AdditionalSolver::vibrEnergy(0,pointL.tempIntr))) - (pointR.density * pointR.velocity*(AdditionalSolver::vibrEnergy(0,pointR.tempIntr)));
+        dF4.push_back(df4_i);
+    }
+
+    Matrix dF1 = U2BLeft - U2BRight;
+
+    U1BLeft = U1BLeft + dF1*0.5*dt_dx;
+    U2BLeft = U2BLeft + dF2*0.5*dt_dx;
+    U3BLeft = U3BLeft + dF3*0.5*dt_dx;
+    U4BLeft = U4BLeft + dF4*0.5*dt_dx;
+    U1BLeft.removeLast()        ;
+    U2BLeft.removeLast();
+    U3BLeft.removeLast();
+    U4BLeft.removeLast();
+
+    U1BRight = U1BRight + dF1*0.5*dt_dx;
+    U2BRight = U2BRight + dF2*0.5*dt_dx;
+    U3BRight = U3BRight + dF3*0.5*dt_dx;
+    U4BRight = U4BRight + dF3*0.5*dt_dx;
+    U1BRight.removeFirst()        ;
+    U2BRight.removeFirst();
+    U3BRight.removeFirst();
+    U4BRight.removeFirst();
+
+    return {U1BLeft,U2BLeft,U3BLeft,U4BLeft,U1BRight,U2BRight,U3BRight,U4BRight};
+
+}
+
+
+void AdditionalSolver::MackCormack(Matrix U1, Matrix U2, Matrix U3, Matrix U4,
+                                   Matrix& F1, Matrix& F2, Matrix& F3, Matrix& F4,
+                                   Matrix& F11, Matrix& F22, Matrix& F33, Matrix& F44,Matrix& R,
+                                   QList<double>& EnergyVibr)
+{
+    Matrix velosity = U2/U1;
+    auto EVibr = U4/U1;
+    auto energyFull = U3/U1 - Matrix::POW(velosity,2)/2;
+    auto E_tr_rot = energyFull - EVibr;
+    Matrix T, Tvv;
+    Matrix pressures;
+
+    for (auto energy: EVibr)
+    {
+        auto TempTv = getEnergyVibrTemp(energy,EnergyVibr);
+        if(TempTv < 300)
+            TempTv = 300;
+        Tvv.push_back(TempTv);
+    }
+    for (auto energy: E_tr_rot)
+        T.push_back(energy*2*mass/(5*kB));
+    F1.clear();
+    F1.resize(T.size());
+    F2.clear();
+    F2.resize(T.size());
+    F3.clear();
+    F3.resize(T.size());
+    F4.clear();
+    F4.resize(T.size());
+    F11.clear();
+    F11.resize(T.size());
+    F22.clear();
+    F22.resize(T.size());
+    F33.clear();
+    F33.resize(T.size());
+    F44.clear();
+    F44.resize(T.size());
+    R.clear();
+    R.resize(T.size());
+    pressures = U1*T*UniversalGasConstant/molMass;
+    for(auto i = 0; i < T.size(); i++)
+    {
+        auto Tx = T[i];
+        auto vel = velosity[i];
+        auto Tv = Tvv[i];
+        auto rho = U1[i];
+        auto press = pressures[i];
+        double omega11 = AdditionalSolver::getOmega11(Tx);
+        double omega22 = AdditionalSolver::getOmega22(Tx);
+        double zCO2Vibr = AdditionalSolver::ZCO2Vibr(Tv);
+        double cVibr = AdditionalSolver::CVibr(Tv, zCO2Vibr);
+        double etta = (5*kB*Tx) /(8*omega22);
+        double Cv =5/2*kB/mass;
+        double F = 1+ pow(M_PI,3.0/2)/2*pow((Tx/epsilonDevK),-1.0/2) + (pow(M_PI,2)/4 +2)*pow(Tx/epsilonDevK,-1) + pow(M_PI,3.0/2)* pow(Tx/epsilonDevK,-3.0/2);
+        double ZettaRot = ZettaInf/F;
+        double trot = ZettaRot*M_PI*etta/4;
+        double CIntDevTauInt = kB/mass/trot;
+        double betta = (3.0*CIntDevTauInt)/(2.0 * Cv)* mass *UniversalGasConstant/molMass *Tx;
+
+        double Evibr = AdditionalSolver::vibrEnergy(0,Tx);
+        double Evibr2 = AdditionalSolver::vibrEnergy(0,Tv);
+        double Etr_rot = 5.0/2*kB*Tx/mass;
+        double zetta = (kB*Tx/betta)*0.16;//additionalSolver.bulkViscosity[AdditionalSolver::BulkViscosity::BV_ONLY_RT_ROT](Cvibr,Tx,point.density, point.pressure);
+        double P =  (4.0/3*etta + zetta);
+        double qVibr =-(3.0*kB*Tx)/(8.0*omega11)*cVibr;// -additionalSolver.lambdaVibr2(Tx,Tv) * dtv_dx;
+        double qTr =-((75.0*pow(kB,2)*Tx)/(32.0*mass*omega22) + (3.0*kB*Tx)/(8.0*omega11)*kB/mass); //-additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
+        double tauVibr = TauVibr(Tx, press);
+        double entalpi = Etr_rot + Evibr2 + press/rho + pow(vel,2)/2;
+        F1[i] = (rho * vel);
+        F11[i] = 0;
+        F2[i] = (F1[i]*vel + press);
+        F22[i] = -vel*P;
+        F3[i] = (F1[i]*entalpi);
+        F33[i] = Tv*qVibr + Tx*qTr - P*vel * vel;
+        auto deltaE = Evibr - Evibr2;
+        R[i] = -rho/tauVibr * deltaE;
+        F4[i] =  F1[i]*Evibr2;
+        F44[i] = Tv*qVibr;
+    }
 }
 
 double AdditionalSolver::shareViscositySuperSimple(double startT, double currentT, double density, double pressure)
@@ -534,6 +882,11 @@ double AdditionalSolver::bulcViscosityNew(double startT, double currentT, double
     double zCO2Vibr = ZCO2Vibr(currentT);
     double cVibr = 0;//CVibr(currentT, zCO2Vibr);
     return additionalSolverForCO2::bulcViscosity(currentT,cVibr, Ctr(), Crot(),pressure);
+}
+
+double AdditionalSolver::bulcViscosityOnlyTRRot(double startT, double currentT, double density, double pressure)
+{
+    return (kB*currentT/Betta(currentT, 0))*pow((Crot())/(Crot() + Ctr() ),2);
 }
 
 double AdditionalSolver::bulcViscosityFalse(double startT, double currentT, double density, double pressure)
@@ -651,7 +1004,11 @@ double AdditionalSolver::TauVibr(double T, double P)
     double b=40.47;
     double c=0;
     double d=0.00423;
-    return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/P;
+    auto e = a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3));
+    auto e2 = a+b*pow(T,1.0/3)+c*pow(T,2.0/3)+d/(pow(T,1.0/3));
+    auto r = exp(e);
+    auto r2 = exp(e2);
+    return r/P;
 }
 
 double AdditionalSolver::lambda(double T, double CVibr)
@@ -680,9 +1037,10 @@ double AdditionalSolver::lambdaVibr2(double T, double Tv)
 
 double AdditionalSolver::lambdaVibr(double startT, double currentT, double density, double pressure )
 {
-    double zCO2Vibr = ZCO2Vibr(currentT);
-    double cVibr = CVibr(currentT, zCO2Vibr);
-    return (3.0*kB*currentT)/(8.0*getOmega11(currentT))*(Crot() + cVibr);
+    return TauVibr(currentT, pressure);
+    //double zCO2Vibr = ZCO2Vibr(currentT);
+    //double cVibr = CVibr(currentT, zCO2Vibr);
+    //return (3.0*kB*currentT)/(8.0*getOmega11(currentT))*(Crot() + cVibr);
 }
 
 double AdditionalSolver::getOmega22(double T)
@@ -723,11 +1081,64 @@ macroParam AdditionalSolver::bondaryConditionRG(macroParam left, solverParams so
 macroParam AdditionalSolver::bondaryConditionRG2T(macroParam left, solverParams solParams)
 {
     macroParam right;
+    double zCO2Vibr = ZCO2Vibr(left.temp);
+    double cVibr = CVibr(left.temp, zCO2Vibr);
+    auto Cv = Crot() + Ctr() + cVibr;
+    solParams.Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
     right.density = ((solParams.Gamma + 1)* pow(solParams.Ma,2))/(2 + (solParams.Gamma -1)* pow(solParams.Ma,2))*left.density;
     right.pressure = (pow(solParams.Ma,2) * 2* solParams.Gamma - (solParams.Gamma - 1))/((solParams.Gamma +1))*left.pressure;
     right.temp = right.pressure/(right.density*UniversalGasConstant/molMass);
     right.tempIntr = right.temp ;
+    right.velocity = left.density*left.velocity/right.density;
     return right;
+}
+
+QStringList AdditionalSolver::runPython(macroParam left,int mlt )
+{
+
+    QStringList arguments { "C:\\Users\\Aspexs\\PycharmProjects\\testArgon\\Fun.py",
+                            left.gas, QString::number(left.velocity), QString::number(left.density),
+                            QString::number(left.temp), "E:\\Text.txt",
+                            QString::number(mlt)};
+    QProcess p;
+    p.start("C:\\Users\\Aspexs\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe", arguments);
+    p.waitForFinished();
+    return QString(p.readAllStandardOutput()).replace("[","").replace("]","").replace("\r\n","").split(" ");
+
+}
+
+double AdditionalSolver::getEnergyVibrTemp(double energy, QList<double> &e)
+{
+    for(auto i = 0 ; i < e.size(); i++)
+        if( energy < e[i])
+            return i  * 1 + 100-1;
+    return (e.size()-1) * 1 + 100 - 1;
+}
+
+macroParam AdditionalSolver::bondaryConditionPython(macroParam left, solverParams solParams)
+{
+    auto mlt =6;
+    macroParam right;
+    while( 20 > mlt )
+    {
+        auto values = runPython(left, mlt);
+        if(values.size() == 3)
+        {
+            right.density = values[0].toDouble();
+            right.velocity = values[1].toDouble();
+            right.temp = values[2].toDouble();
+            right.tempIntr = right.temp;
+            right.pressure = right.density*UniversalGasConstant/molMass*right.temp;//  right.density/mass * kB * right.temp;
+            return right;
+        }
+        mlt++;
+    }
+    return macroParam();
+}
+
+double AdditionalSolver::zVibr(double startT, double currentT, double density, double pressure)
+{
+    return 4*pressure*TauVibr(currentT, pressure)/(M_PI*(5*kB*currentT)/(8*getOmega22(currentT)));
 }
 
 double AdditionalSolver::getTimeStep(Matrix velosity, Matrix density, Matrix pressure, double delta_h, solverParams solParams, Matrix gammas)
@@ -735,7 +1146,7 @@ double AdditionalSolver::getTimeStep(Matrix velosity, Matrix density, Matrix pre
     Matrix c = Matrix::SQRT(pressure*solParams.Gamma/density);
     auto temp = velosity + c;
     auto max =*std::max_element(temp.begin(), temp.end());
-    return solParams.CFL*pow(delta_h,2)/max*100;
+    return solParams.CFL*pow(delta_h,2)/max;
 }
 
 double AdditionalSolver::getTimeStepFull(Matrix velosity, Matrix density, Matrix pressure, double delta_h, solverParams solParams, Matrix gammas)
@@ -743,5 +1154,24 @@ double AdditionalSolver::getTimeStepFull(Matrix velosity, Matrix density, Matrix
     Matrix c = Matrix::SQRT(pressure*gammas/density);
     auto temp = velosity + c;
     auto max =*std::max_element(temp.begin(), temp.end());
-    return solParams.CFL*pow(delta_h,2)/max*100;
+    return solParams.CFL*pow(delta_h,1)/max;
+}
+
+double AdditionalSolver::getTimeStep2(Matrix velosity, Matrix density, Matrix pressure, double delta_h, solverParams solParams, double x, Matrix T)
+{
+    Matrix c = Matrix::SQRT(pressure*solParams.Gamma/density);
+    auto temp = velosity + c;
+    auto E_in = temp/delta_h;
+    //Matrix E_vis;
+    for(auto i = 0 ; i <  T.size(); i++)
+    {
+        auto zco = ZCO2Vibr(T[i]);
+        auto cvibr = CVibr(T[i], zco);
+        auto element = 2*x/(cvibr* density[i]*delta_h*delta_h);
+        E_in.push_back(element);
+    }
+    auto max =*std::max_element(E_in.begin(), E_in.end());
+    return solParams.CFL/max;
+
+
 }

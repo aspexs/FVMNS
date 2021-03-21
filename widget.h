@@ -7,10 +7,12 @@
 #include "nitrogensolver.h"
 #include "co2solver.h"
 #include "co22tsolver.h"
+#include "co22tsolverK.h"
+#include "co2solver2T.h"
 #include <additionalsolver.h>
 #include <chart.h>
 #include <QChartView>
-
+#include "oxygensolver.h"
 namespace Ui {
 class Widget;
 }
@@ -40,7 +42,8 @@ private slots:
     void on_comboBox_timeStep_currentIndexChanged(int index);
     void updatePlot(QVector<double> x, QVector<double> y, double lambda);
     void updateAdditionalPlot(QVector<double> x, QVector<double> y, double lambda);
-    void updateTime(double time);
+     void updateAdditional2Plot(QVector<double> x, QVector<double> y, double lambda);
+    void updateTime(double time, double error);
     void on_pushButton_start_clicked();
 
     void on_comboBox_share_currentIndexChanged(int index);
@@ -58,8 +61,10 @@ private:
     QChartView* chartView;
     QString gas;
     QVector<double> _x;
-    QVector<double>_y;
+    QVector<double> _y;
+    QVector<double> _y2;
     bool isAdditionalSolve = true;
+    double _time;
 };
 
 #endif // WIDGET_H

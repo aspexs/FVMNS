@@ -1,16 +1,15 @@
-#ifndef CO22TSOLVER_H
-#define CO22TSOLVER_H
+#ifndef CO22TSOLVERК_H
+#define CO22TSOLVERК_H
 #include "global.h"
 #include "abstaractsolver.h"
 #include "additionalsolver.h"
 
-
-class Co22TSolver: public AbstaractSolver
+class Co22TSolverK: public AbstaractSolver
 {
 public:
-    Co22TSolver(QObject *parent = nullptr);
+    Co22TSolverK(QObject *parent = nullptr);
     void prepareSolving() override;
-    void solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl, Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr, Matrix EnergyFull);
+    void solveFlux(const Matrix& U1, const Matrix& U2, const Matrix& U3, const Matrix& U4);
     void calcRiemanPStar();
     void calcFliux();
 public slots:
@@ -24,16 +23,19 @@ private:
     QList<double> EnergyTr_Rot;
     double energyStartTemp;
     double energyStepTemp;
+    Matrix EnergyFullL, EnergyFullR;
 
     double CVibrStartTemp;
     double CVibrStepTemp;
-    double dt, error;
-    QVector<double> pres, R;
-    Matrix T, Tv, Tl,Tr,E__;
+    double dt;
+     double leftEnergy;
+    QVector<double> pres, R, T,Tv;
+    Matrix F11, F22, F33,F44;
+    void calcHLLE(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
     void calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
 
     double getEnergyVibrTemp(double energy);
     double getVibrTemp(double CVibr);
 };
 
-#endif // CO22TSOLVER_H
+#endif // CO22TSOLVERК_H

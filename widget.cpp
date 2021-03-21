@@ -22,10 +22,10 @@ Widget::Widget(QWidget *parent) :
     chart->legend()->hide();
     chartView = new QChartView(chart);
     chart->setAnimationOptions(QChart::AllAnimations);
-    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setRenderHint(QPainter::NonCosmeticDefaultPen);
     ui->widget->layout()->addWidget(chartView);
     qRegisterMetaType<QVector<double>>("QVector<double>");
-
+    AdditionalSolver::TauVibr(300, 6.66);
 }
 
 Widget::~Widget()
@@ -65,50 +65,41 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
          ui->comboBox_bulk->addItem("Вязкость простая");
          solver->typeBulkVisc = 0;
     }
-    else if (gas.contains("CO2") && !gas.contains("2T"))
-    {
-         molMass = 44.01e-3;
-         sigma = 3.763e-10;
-         epsilonDevK = 244;
-         solver = new CO2Solver;
-         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
-         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
-         ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (old) ");
-         ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (new) ");
-         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии");
-         ui->comboBox_additionalSolvingType->addItem("Расчет общей энергии");
-         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплоемкости");
-         ui->comboBox_additionalSolvingType->addItem("Расчет поступательной теплопроводности");
-         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплопроводности");
-
-
-         ui->comboBox_bulk->addItem("Old");
-         ui->comboBox_bulk->addItem("New");                                 // not ready
-         ui->comboBox_bulk->addItem("Without bulk viscosity");
-         //ui->comboBox_energy->addItem("Из давлнеия");                       // not ready
-         ui->comboBox_energy->addItem("Строгое кинетическое уравнение");
-         ui->comboBox_BC->addItem("Ренкина-Гюгонио");
-         //ui->comboBox_BC->addItem("Решение уравнения Оли");                 // not ready
-         ui->comboBox_bulk->setCurrentIndex(0);
-         ui->comboBox_energy->setCurrentIndex(0);
-         ui->comboBox_BC->setCurrentIndex(0);
-    }
-    else
+    else if(gas.contains("CO2"))
     {
         molMass = 44.01e-3;
         sigma = 3.763e-10;
         epsilonDevK = 244;
-        solver = new Co22TSolver;
-        ui->comboBox_bulk->addItem("Old");
-        ui->comboBox_bulk->addItem("New");                                 // not ready
-                                  // not ready
-        //ui->comboBox_energy->addItem("Из давлнеия");                       // not ready
-        ui->comboBox_energy->addItem("Строгое кинетическое уравнение");
+        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (old) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (new) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии");
+        ui->comboBox_additionalSolvingType->addItem("Расчет общей энергии");
+        ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплоемкости");
+        ui->comboBox_additionalSolvingType->addItem("Расчет поступательной теплопроводности");
+        ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплопроводности");
+        ui->comboBox_additionalSolvingType->addItem("Z_vibr");
         ui->comboBox_BC->addItem("Ренкина-Гюгонио");
-        //ui->comboBox_BC->addItem("Решение уравнения Оли");                 // not ready
-        ui->comboBox_bulk->setCurrentIndex(0);
-        ui->comboBox_energy->setCurrentIndex(0);
-        ui->comboBox_BC->setCurrentIndex(0);
+        ui->comboBox_BC->addItem("Законы сохранения (Гир)");
+        ui->comboBox_BC->setCurrentIndex(1);
+        ui->comboBox_bulk->addItem("Простая постановка");
+        ui->comboBox_bulk->addItem("Обычная постановка с учетом колебательных мод (1Т)");
+        ui->comboBox_bulk->addItem("Обычная постановка без колебательных мод (2Т)");
+        ui->comboBox_bulk->addItem("Без объемной вязкости");
+
+
+        if(gas.contains("RS"))
+             solver = new Co22TSolver;
+        else if(gas.contains("HLLE"))
+             solver = new Co22TSolverK;
+        else
+             solver = new CO2Solver;
+    }
+    else if(gas.contains("O2"))
+    {
+
+        solver = new OxygenSolver;
     }
     ui->comboBox_additionalSolvingType->setCurrentIndex(0);
 
@@ -117,18 +108,18 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     ui->label_gasMolMass->setText("Молярная масса газа: " + QString::number(molMass));
     ui->label_mass->setText("Масса молекулы газа: " + QString::number(mass));
     disconnect(solver, SIGNAL(updateGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updatePlot(QVector<double>, QVector<double>, double)));
-    disconnect(solver, SIGNAL(updateTime(double)), this, SLOT(updateTime(double)));
+    disconnect(solver, SIGNAL(updateTime(double, double)), this, SLOT(updateTime(double, double)));
     disconnect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
     disconnect(ui->pushButton_cancel,  SIGNAL(clicked()), this, SLOT(cancal()));
     disconnect(ui->pushButton_pause, SIGNAL(clicked()), this, SLOT(pause()));
 
     connect(solver, SIGNAL(updateGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updatePlot(QVector<double>, QVector<double>, double)));
-     connect(solver, SIGNAL(updateAdditionalGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updateAdditionalPlot(QVector<double>, QVector<double>, double)));
-    connect(solver, SIGNAL(updateTime(double)), this, SLOT(updateTime(double)));
+    connect(solver, SIGNAL(updateAdditionalGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updateAdditionalPlot(QVector<double>, QVector<double>, double)));
+    connect(solver, SIGNAL(updateAdditional2Graph(QVector<double>, QVector<double>, double)), this ,SLOT(updateAdditional2Plot(QVector<double>, QVector<double>, double)));
+    connect(solver, SIGNAL(updateTime(double, double)), this, SLOT(updateTime(double, double)));
     connect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
     connect(ui->pushButton_cancel,  SIGNAL(clicked()), this, SLOT(cancal()));
     connect(ui->pushButton_pause, SIGNAL(clicked()), this, SLOT(pause()));
-
 }
 
 void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
@@ -169,7 +160,7 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
             case 6: additionalSolver->typeSolve = AdditionalSolver::C_VIBR; break;
             case 7: additionalSolver->typeSolve = AdditionalSolver::LAMBDA_TR; break;
             case 8: additionalSolver->typeSolve = AdditionalSolver::LAMBDA_VIBR; break;
-
+            case 9: additionalSolver->typeSolve = AdditionalSolver::Z_VIBR; break;
             default: additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_SIMPLE;
         }
     }
@@ -205,7 +196,7 @@ void Widget::on_comboBox_energy_currentIndexChanged(int index)
 
 void Widget::on_comboBox_BC_currentIndexChanged(int index)
 {
-
+    solver->typeBC = index;
 }
 
 void Widget::on_comboBox_typePlot_currentIndexChanged(int index)
@@ -222,6 +213,7 @@ void Widget::updatePlot(QVector<double> x, QVector<double> y, double lambda)
 {
     _x= x;
     _y = y;
+    _y2.resize(y.size());
     chart->setData(x, y, lambda);
     chart->update();
     chartView->repaint();
@@ -231,6 +223,7 @@ void Widget::updatePlot(QVector<double> x, QVector<double> y, double lambda)
 
 void Widget::updateAdditionalPlot(QVector<double> x, QVector<double> y, double lambda)
 {
+    _y2 = y;
      chart->setAdditionalData(x, y, lambda);
      chart->update();
      chartView->repaint();
@@ -238,9 +231,20 @@ void Widget::updateAdditionalPlot(QVector<double> x, QVector<double> y, double l
      update();
 }
 
-void Widget::updateTime(double time)
+void Widget::updateAdditional2Plot(QVector<double> x, QVector<double> y, double lambda)
 {
+    chart->setAdditionalData2(x, y, lambda);
+    chart->update();
+    chartView->repaint();
+    repaint();
+    update();
+}
+
+void Widget::updateTime(double time, double error)
+{
+    _time = time;
      ui->label_time->setText("Время расчета :  " + QString::number(time,'g', 10));
+     ui->label_error->setText("Суммарное отклонение :  " + QString::number(error,'g', 10));
 }
 
 void Widget::on_pushButton_start_clicked()
@@ -302,9 +306,8 @@ void Widget::on_pushButton_csv_clicked()
         {
             QTextStream out(&file);
             for(int i = 0; i <additionalSolver->iterationVector.size(); i ++)
-            {
                 out << additionalSolver->iterationVector[i] << ";" << additionalSolver->rezultVector[i] << "\n";
-            }
+
         }
         file.close();
     }
@@ -324,9 +327,8 @@ void Widget::on_pushButton_csv_clicked()
         {
             QTextStream out(&file);
             for(int i = 0; i <_x.size(); i ++)
-            {
-                out << _x[i] << ";" << _y[i] << "\n";
-            }
+                out << _x[i] << ";" << _y[i] << ";"<< _y2[i] <<"\n";
+            out << _time;
         }
         file.close();
     }

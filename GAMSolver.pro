@@ -28,25 +28,31 @@ SOURCES += \
         abstaractsolver.cpp \
         additionalsolver.cpp \
         additionalsolverforco2.cpp \
+        additionalsolverforoxygen.cpp \
         argonsolver.cpp \
         chart.cpp \
         co22tsolver.cpp \
+        co22tsolverK.cpp \
         co2solver.cpp \
         global.cpp \
         main.cpp \
         nitrogensolver.cpp \
+        oxygensolver.cpp \
         widget.cpp
 
 HEADERS += \
         abstaractsolver.h \
+        additionalSolverForOxygen.h \
         additionalsolver.h \
         additionalsolverforco2.h \
         argonsolver.h \
         chart.h \
         co22tsolver.h \
+        co22tsolverK.h \
         co2solver.h \
         global.h \
         nitrogensolver.h \
+        oxygensolver.h \
         widget.h
 
 FORMS += \

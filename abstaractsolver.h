@@ -9,6 +9,7 @@
 #include <QtConcurrent>
 #include "global.h"
 #include "additionalsolver.h"
+#include "additionalsolverforco2.h"
 class AbstaractSolver : public QThread
 {
     Q_OBJECT
@@ -29,6 +30,7 @@ public:
     int typeShareVisc = 0;
     int typeEnergy = 0;
     AdditionalSolver additionalSolver;
+    additionalSolverForCO2 additionalSolverCo2;
 public slots:
     void pause();
     void breakSolver();
@@ -54,7 +56,8 @@ protected:
 signals:
    void updateGraph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateAdditionalGraph(QVector<double> x, QVector<double> y, double lambda = 1);
-   void updateTime(double time);
+   void updateAdditional2Graph(QVector<double> x, QVector<double> y, double lambda = 1);
+   void updateTime(double time, double error = 0);
 };
 
 #endif // ABSTARACTSOLVER_H

@@ -22,7 +22,12 @@ void ArgonSolver::solve()
         }
         Matrix velosity = U2/U1;
         auto pressure = (U3 - Matrix::POW(velosity,2)*0.5*U1)*(solParam.Gamma - 1);
-        double dt = additionalSolver.TimeStepSolution[typeTimeStepSolution](velosity, U1, pressure, delta_h,solParam,U3);
+        Matrix c = Matrix::SQRT(pressure*solParam.Gamma/U1);
+        auto temp = velosity + c;
+        auto max =*std::max_element(temp.begin(), temp.end());
+        double dt = solParam.CFL*pow(delta_h,1)/max;
+
+        //double dt = additionalSolver.TimeStepSolution[typeTimeStepSolution](velosity, U1, pressure, delta_h,solParam,U3);
         timeSolvind.push_back(dt);
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
@@ -32,15 +37,16 @@ void ArgonSolver::solve()
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
         solveFlux(U1L, U2L, U3L, U1R, U2R, U3R);
-        auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,U1, U2,U3,dt,delta_h);
+        auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
         U1 = res[0];
         U2 = res[1];
         U3 = res[2];
         U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
         U2[0]=solParam.typeLeftBorder*U2[1];
         U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
-        U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
+        U3[0]=U3[1];   //U3[U3.size() - 1] =U3[U3.size() - 2];
 
+        U3[U3.size() - 1] = rightParam.pressure/(solParam.Gamma-1)+0.5*pow(U2[U2.size() - 1]/U1[U1.size() - 1],2)*U1[U1.size() - 1];
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);
@@ -77,7 +83,15 @@ void ArgonSolver::prepareSolving()
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
     leftParam.soundSpeed = sqrt(solParam.Gamma*leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-    rightParam = additionalSolver.BoundaryCondition[typeBC](leftParam, solParam);
+
+    rightParam.density = ((solParam.Gamma + 1)* pow(solParam.Ma,2))/(2 + (solParam.Gamma -1)* pow(solParam.Ma,2))*leftParam.density;
+    rightParam.pressure = (pow(solParam.Ma,2) * 2* solParam.Gamma - (solParam.Gamma - 1))/((solParam.Gamma +1))*leftParam.pressure;
+    rightParam.temp = rightParam.pressure/(rightParam.density*UniversalGasConstant/molMass);
+auto g = solParam.Gamma;
+auto m = solParam.Ma;
+    auto temp2 = (2*g*m*m/(g+1) - (g-1)/(g+1))/((g+1)* m*m/(2 + (g-1)*m*m));
+
+    //rightParam = additionalSolver.BoundaryCondition[typeBC](leftParam, solParam);
     rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
 
     for(auto i  = 1; i < solParam.NumCell+1; i++)
