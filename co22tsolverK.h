@@ -16,16 +16,7 @@ public slots:
     void setTypePlot(int i) override;
 
 private:
-    QList<double> CvibrMass;
-    QVector<double> EnergyVibr;
-
-    QList<double> EnergyTr_Rot;
-    double energyStartTemp;
-    double energyStepTemp;
     Matrix EnergyFullL, EnergyFullR;
-
-    double CVibrStartTemp;
-    double CVibrStepTemp;
     double dt;
      double leftEnergy;
     QVector<double> pres, R, T,Tv;

@@ -2,61 +2,7 @@
 
 Co22TSolver::Co22TSolver(QObject *parent): AbstaractSolver(parent)
 {
-    QFile fileEnergy(QDir::currentPath() + "\\vibrEnergy.csv");
-    QFile fileCVibr(QDir::currentPath() + "\\CVibr.csv");
-    QFile fileAllEnergy(QDir::currentPath() + "\\allEnergy.csv");
-    if(fileEnergy.open(QFile::ReadOnly) && fileCVibr.open(QFile::ReadOnly) && fileAllEnergy.open(QFile::ReadOnly))
-    {
-        QTextStream outEnergy(&fileEnergy);
-        QStringList line = outEnergy.readLine().split(";");
-        energyStartTemp = line[0].toDouble();
-        EnergyVibr.push_back(line[1].toDouble());
-        line = outEnergy.readLine().split(";");
-        energyStepTemp = line[0].toDouble() - energyStartTemp;
-        EnergyVibr.push_back(line[1].toDouble());
 
-        while (!outEnergy.atEnd())
-        {
-           QStringList line = outEnergy.readLine().split(";");
-           if(line.size() != 2)
-               break;
-
-           EnergyVibr.push_back(line[1].toDouble());
-        }
-        QTextStream outCVibr(&fileCVibr);
-
-        line = outCVibr.readLine().split(";");
-        CVibrStartTemp = line[0].toDouble();
-        CvibrMass.push_back(line[1].toDouble());
-        line = outCVibr.readLine().split(";");
-        CVibrStepTemp = line[0].toDouble() - CVibrStartTemp;
-        CvibrMass.push_back(line[1].toDouble());
-        while (!outCVibr.atEnd())
-        {
-            QStringList line = outCVibr.readLine().split(";");
-            if(line.size() != 2)
-                break;
-            CvibrMass.push_back(line[1].toDouble());
-        }
-
-//        QTextStream outAllEnergy(&fileAllEnergy);
-//        line = outAllEnergy.readLine().split(";");
-//        energyStartTemp = line[0].toDouble();
-//        Energy.push_back(line[1].toDouble());
-//        line = outAllEnergy.readLine().split(";");
-//        energyStepTemp = line[0].toDouble() - energyStartTemp;
-//        Energy.push_back(line[1].toDouble());
-//        while (!outAllEnergy.atEnd())
-//        {
-//           QStringList line = outAllEnergy.readLine().split(";");
-//           if(line.size() != 2)
-//               break;
-
-//           Energy.push_back(line[1].toDouble());
-//        }
-    }
-    fileEnergy.close();
-    fileCVibr.close();
 }
 
 void Co22TSolver::prepareSolving()
@@ -397,8 +343,8 @@ double Co22TSolver::getEnergyVibrTemp(double energy)
 {
     for(auto i = 0 ; i < EnergyVibr.size(); i++)
         if( energy < EnergyVibr[i])
-            return (i)  * energyStepTemp + energyStartTemp;
-    return (EnergyVibr.size()-1) * energyStepTemp + energyStartTemp;
+            return (i)  * energyVibrStepTemp + energyVibrStartTemp;
+    return (EnergyVibr.size()-1) * energyVibrStepTemp + energyVibrStartTemp;
 }
 
 double Co22TSolver::getVibrTemp(double CVibr)

@@ -53,6 +53,17 @@ protected:
     Matrix right_Tv;
     QVector<macroParam> rezultAfterPStart;
     QMutex mutex;
+    QList<double> CvibrMass;
+    double CVibrStartTemp;
+    double CVibrStepTemp;
+    QVector<double> EnergyVibr;
+    double energyVibrStartTemp;
+    double energyVibrStepTemp;
+
+    QVector<double> Energy;
+    double energyStartTemp;
+    double energyStepTemp;
+
 signals:
    void updateGraph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateAdditionalGraph(QVector<double> x, QVector<double> y, double lambda = 1);

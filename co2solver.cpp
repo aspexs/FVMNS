@@ -2,43 +2,6 @@
 
 CO2Solver::CO2Solver(QObject *parent): AbstaractSolver(parent)
 {
-     QFile fileEnergy(QDir::currentPath() + "\\allEnergy.csv");
-     QFile fileCVibr(QDir::currentPath() + "\\CVibr.csv");
-     if(fileEnergy.open(QFile::ReadOnly) && fileCVibr.open(QFile::ReadOnly) )
-     {
-         QTextStream outEnergy(&fileEnergy);
-         QStringList line = outEnergy.readLine().split(";");
-         energyStartTemp = line[0].toDouble();
-         Energy.push_back(line[1].toDouble());
-         line = outEnergy.readLine().split(";");
-         energyStepTemp = line[0].toDouble() - energyStartTemp;
-         Energy.push_back(line[1].toDouble());
-         while (!outEnergy.atEnd())
-         {
-            QStringList line = outEnergy.readLine().split(";");
-            if(line.size() != 2)
-                break;
-
-            Energy.push_back(line[1].toDouble());
-         }
-         QTextStream outCVibr(&fileCVibr);
-
-         line = outCVibr.readLine().split(";");
-         CVibrStartTemp = line[0].toDouble();
-         CvibrMass.push_back(line[1].toDouble());
-         line = outCVibr.readLine().split(";");
-         CVibrStepTemp = line[0].toDouble() - CVibrStartTemp;
-         CvibrMass.push_back(line[1].toDouble());
-         while (!outCVibr.atEnd())
-         {
-             QStringList line = outCVibr.readLine().split(";");
-             if(line.size() != 2)
-                 break;
-             CvibrMass.push_back(line[1].toDouble());
-         }
-     }
-     fileEnergy.close();
-     fileCVibr.close();
 }
 
 void CO2Solver::prepareSolving()
