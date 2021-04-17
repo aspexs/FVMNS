@@ -23,8 +23,8 @@ private:
        QVector<double> EnergyVibr, pres;
     QList<double> CvibrMass;
     //QList<double> Energy;
-    double energyStartTemp;
-    double energyStepTemp;
+    double energyVibrStartTemp;
+    double energyVibrStepTemp;
 
     double CVibrStartTemp;
     double CVibrStepTemp;

@@ -19,14 +19,6 @@ public slots:
     void solve() override;
     void setTypePlot(int i) override;
 private:
-    QList<double> CvibrMass;
-    QList<double> Energy;
-    double energyStartTemp;
-    double energyStepTemp;
-
-    double CVibrStartTemp;
-    double CVibrStepTemp;
-
     double getEnergyTemp(double energy);
     double getVibrTemp(double CVibr);
 };
