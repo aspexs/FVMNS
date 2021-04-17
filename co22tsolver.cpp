@@ -74,7 +74,7 @@ void Co22TSolver::prepareSolving()
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
     leftParam.tempIntr = leftParam.temp;
 
-    rightParam = additionalSolver.BoundaryCondition[typeBC+1](leftParam, solParam);
+    rightParam = additionalSolver.bondaryConditionPython(leftParam, solParam);
     rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
 //////////////////
 // rightParam.temp = 500.5;
@@ -91,7 +91,7 @@ void Co22TSolver::prepareSolving()
 
     for(auto i  = 1; i < solParam.NumCell+1; i++)
     {
-        if(i < 10)
+        if(i < solParam.NumCell/2 +1)
         {
             U1[i] = leftParam.density;
             U2[i] = leftParam.density*leftParam.velocity;
@@ -136,6 +136,10 @@ void Co22TSolver::prepareSolving()
     F2.resize(solParam.NumCell+1);
     F3.resize(solParam.NumCell+1);
     F4.resize(solParam.NumCell+1);
+    P.resize(solParam.NumCell+2);
+    Q_v.resize(solParam.NumCell+2);
+    Q_t.resize(solParam.NumCell+2);
+
     E__.resize(U1.size());
     R.resize(solParam.NumCell+1);
     rezultAfterPStart.resize(solParam.NumCell+1);
@@ -176,9 +180,7 @@ void Co22TSolver::calcRiemanPStar()
         left.tempIntr = left_Tv[i];
         right.tempIntr = right_Tv[i];
         mutex.unlock();
-        auto Cv = 5.0/2 * kB/mass;
-        auto Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right,Gamma);
+        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right,solParam.Gamma);
         return;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
@@ -199,37 +201,29 @@ void Co22TSolver::calcFliux()
         auto tempRtv = right_Tv[i];
         double Tx =  point.pressure/(point.density*UniversalGasConstant/molMass);
         double Tv = tempLtv;
-
         double energyVibr =  additionalSolver.vibrEnergy(0,Tv);
-        pres[i] = point.pressure;
         mutex.unlock();
 
         double etta = additionalSolver.shareViscosityOmega(0,Tx);
-        //double Evibr = additionalSolver.vibrEnergy(0,Tx);
         double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
 
         double P = (4.0/3*etta + zetta)*du_dx;
+        this->P[i] = P;
         double dt_dx = (tempR - tempL)/delta_h;
         double dtv_dx = (tempRtv - tempLtv)/delta_h;
 
         double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv)* dtv_dx;
         double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
 
+        Q_v[i] = qVibr;
+        Q_t[i] = qTr;
         double Etr_rot = 5.0/2*kB*Tx/mass;
-       // double Evibr =  AdditionalSolver::vibrEnergy(0,Tx);
-
         double entalpi = Etr_rot + energyVibr + point.pressure/point.density + pow(point.velocity,2)/2;
-        E__[i] = entalpi;
-        //double tauVibr = additionalSolver.TauVibr(Tx,left_pressure[i]);
-        //auto deltaE = (additionalSolver.vibrEnergy(0,Tx) - additionalSolver.vibrEnergy(0,Tv));
 
-        //auto r = left_density[i]/tauVibr*deltaE;
         F1[i] = point.density * point.velocity;
         F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr + qTr;
-
-        F4[i] = point.density * point.velocity*energyVibr + qVibr;// - r;
-        //R[i] = r;
+        F4[i] = point.density * point.velocity*energyVibr + qVibr;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -268,7 +262,7 @@ void Co22TSolver::solve()
         }
         pressure = U1*T*UniversalGasConstant/molMass;
         pres = pressure;
-        dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
+        dt = additionalSolver.getTimeStepFull(velosity, U1, pressure, delta_h,solParam,gammas);
         timeSolvind.push_back(dt+timeSolvind.last());
         //pres = pressure;
         auto U1L = U1; U1L.removeLast();
@@ -312,26 +306,26 @@ void Co22TSolver::solve()
         //U4[0]=U4[1];   U4[U4.size() - 1] =U4[U4.size() - 2];
 
         ////    Вариант расчета при фиксированном правом давлении
-        U1[0]=U1[1];                         U1[U1.size() - 1] = U1[U1.size() - 2];
-        U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
-        U4[0]=U4[1];                         U4[U4.size() - 1] = U4[U4.size() - 2];
+         U1[0]=U1[1];                         U1[U1.size() - 1] = U1[U1.size() - 2];
+         U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
+         U4[0]=U4[1];                         U4[U4.size() - 1] = U4[U4.size() - 2];
 
-        U3[0]=U3[1];                         //U3[U3.size() - 1] = //U3[U3.size() - 2];
-        E__[E__.size() -1] = E__[E__.size() -2];
-        auto T = rightParam.pressure* molMass/(UniversalGasConstant*U1.last());
-        auto Tv = getEnergyVibrTemp(U4.last()/U1.last());
+         U3[0]=U3[1];                         //U3[U3.size() - 1] = //U3[U3.size() - 2];
 
-        double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
-        double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
-        U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
+         auto T = rightParam.pressure* molMass/(UniversalGasConstant*U1.last());
+         auto Tv = getEnergyVibrTemp(U4.last()/U1.last());
+
+         double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
+         double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
+         U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
         ////    Вариант расчета при фиксированной правой части
-        //double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
-        //double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;
-        //U1[0]=U1[1];                         U1[U1.size() - 1] = rightParam.density;// U1[U1.size() - 2];
-        //U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size() - 1]= rightParam.density* rightParam.velocity;// solParam.typeRightBorder*U2[U2.size()-2];
-        //U3[0]=U3[1];                         U3[U3.size() - 1] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
-        //U4[0]=U4[1];                         U4[U4.size() - 1] = rightParam.density*rightEVibr;
-        //R[0]=R[1];   R[R.size() - 1] =R[R.size() - 2];
+        ///double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
+        ///double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;
+        ///U1[0]=U1[1];                         U1[U1.size() - 1] = rightParam.density;// U1[U1.size() - 2];
+        ///U2[0]=solParam.typeLeftBorder*U2[1]; U2[U2.size() - 1]= rightParam.density* rightParam.velocity;// solParam.typeRightBorder*U2[U2.size()-2];
+        ///U3[0]=U3[1];                         U3[U3.size() - 1] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
+        ///U4[0]=U4[1];                         U4[U4.size() - 1] = rightParam.density*rightEVibr;
+        ///R[0]=R[1];   R[R.size() - 1] =R[R.size() - 2];
 
         if(i % solParam.PlotIter == 0)
         {
@@ -353,13 +347,17 @@ void Co22TSolver::solve()
 void Co22TSolver::setTypePlot(int i)
 {
     solParam.typePlot = i;
-    QVector<double> values, additionalValues ;
+    QVector<double> values, additionalValues;
+    additionalValues.resize(x.size());
     switch (solParam.typePlot)
     {
     case 0: values = pres;break;
     case 1: values = U1; break;
     case 2: values = U2/U1;break;
     case 3: values = T; additionalValues = Tv; break;
+    case 4: values = P;break;
+    case 5:values = Q_t;break;
+    case 6:values = Q_v;break;
 
     default: values = U1; break;
     }
@@ -399,7 +397,7 @@ double Co22TSolver::getEnergyVibrTemp(double energy)
 {
     for(auto i = 0 ; i < EnergyVibr.size(); i++)
         if( energy < EnergyVibr[i])
-            return (i+1)  * energyStepTemp + energyStartTemp;
+            return (i)  * energyStepTemp + energyStartTemp;
     return (EnergyVibr.size()-1) * energyStepTemp + energyStartTemp;
 }
 

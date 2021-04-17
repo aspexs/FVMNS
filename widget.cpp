@@ -321,13 +321,22 @@ void Widget::on_pushButton_csv_clicked()
             nameFile = "/скорость.csv";
         else if(ui->comboBox_typePlot->currentIndex() == 3)
             nameFile = "/температура.csv";
+        else if(ui->comboBox_typePlot->currentIndex() == 4)
+            nameFile = "/Напряжение.csv";
+        else if(ui->comboBox_typePlot->currentIndex() == 5)
+            nameFile = "/q_tr_rot.csv";
+        else if(ui->comboBox_typePlot->currentIndex() == 6)
+            nameFile = "/Q_vibr.csv";
+
 
         QFile file(QDir::currentPath() + nameFile);
         if(file.open(QFile::WriteOnly))
         {
             QTextStream out(&file);
             for(int i = 0; i <_x.size(); i ++)
+            {
                 out << _x[i] << ";" << _y[i] << ";"<< _y2[i] <<"\n";
+            }
             out << _time;
         }
         file.close();

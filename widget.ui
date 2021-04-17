@@ -275,7 +275,7 @@
    <item row="12" column="5">
     <widget class="QComboBox" name="comboBox_gamma">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <item>
       <property name="text">
@@ -354,6 +354,21 @@
      <item>
       <property name="text">
        <string>Абс. значение температуры</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Тензор напряжения</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>q_tr_rot</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>q_vibr</string>
       </property>
      </item>
     </widget>
@@ -485,7 +500,7 @@
    <item row="11" column="5">
     <widget class="QSpinBox" name="spinBox_timeplot">
      <property name="value">
-      <number>20</number>
+      <number>10</number>
      </property>
     </widget>
    </item>
@@ -576,7 +591,7 @@
    <item row="7" column="8">
     <widget class="QDoubleSpinBox" name="doubleSpinBox_ma">
      <property name="value">
-      <double>6.100000000000000</double>
+      <double>5.000000000000000</double>
      </property>
     </widget>
    </item>

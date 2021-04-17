@@ -53,7 +53,7 @@ void CO2Solver::prepareSolving()
     double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
     leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-    auto n = leftParam.pressure/(kB*leftParam.temp);
+
     rightParam = additionalSolver.bondaryConditionPython(leftParam, solParam);
     rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
     double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + additionalSolver.vibrEnergy(0,leftParam.temp);
@@ -127,15 +127,15 @@ void CO2Solver::calcRiemanPStar()
         right.velocity = right_velocity[i];
         right.pressure = right_pressure[i];
         mutex.unlock();
-        //auto tempL = left.pressure /(UniversalGasConstant/molMass * left.density);
-        //auto tempR = right.pressure /(UniversalGasConstant/molMass * right.density);
-        //mutex.lock();
-        //auto CvL = 5.0/2 * kB/mass + CvibrMass[(tempL - CVibrStartTemp)/CVibrStepTemp];
-        //auto CvR = 5.0/2 * kB/mass + CvibrMass[(tempR - CVibrStartTemp)/CVibrStepTemp];
-       // mutex.unlock();
-        //auto GammaL = (UniversalGasConstant/molMass + CvL)/CvL;
-        //auto GammaR = (UniversalGasConstant/molMass + CvR)/CvR;
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right, solParam.Gamma);
+      // auto tempL = left.pressure /(UniversalGasConstant/molMass * left.density);
+      // auto tempR = right.pressure /(UniversalGasConstant/molMass * right.density);
+       mutex.lock();
+       auto CvL = 5.0/2 * kB/mass;// + additionalSolver.CVibr(tempL, additionalSolver.ZCO2Vibr(tempL));
+       auto CvR = 5.0/2 * kB/mass;// + additionalSolver.CVibr(tempR, additionalSolver.ZCO2Vibr(tempR));
+       mutex.unlock();
+       auto GammaL = (UniversalGasConstant/molMass + CvL)/CvL;
+       auto GammaR = (UniversalGasConstant/molMass + CvR)/CvR;
+        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolverCorrect(left,right, GammaL,GammaR);
         return;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
@@ -151,7 +151,7 @@ void CO2Solver::calcFliux()
         auto point = rezultAfterPStart[i];
         double tempL = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
         double tempR = right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
-        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
+        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h*2;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
 
@@ -173,7 +173,7 @@ void CO2Solver::calcFliux()
         double zetta =additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
         double P =  (4.0/3*etta + zetta)*du_dx;
         double lambda = additionalSolver.lambda(Tx, Cvibr);
-        double dt_dx = (tempR - tempL)/delta_h;
+        double dt_dx = (tempR - tempL)/delta_h*2;
         double q =   -lambda*dt_dx;
         double entalpi = Etr_rot + energyVibr1 + point.pressure/point.density + pow(point.velocity,2)/2;
         F1[i] = point.density * point.velocity;
@@ -205,8 +205,8 @@ void CO2Solver::solve()
         for (auto energy: energyReal)
         {
             temperature.push_back(getEnergyTemp(energy));
-            double Cv = 5.0/2 * kB/mass;// + CvibrMass[(temperature.last() - CVibrStartTemp)/CVibrStepTemp];
-            gammas.push_back(solParam.Gamma);//  (UniversalGasConstant/molMass + Cv)/Cv);
+            double Cv = 5.0/2 * kB/mass+ CvibrMass[(temperature.last() - CVibrStartTemp)/CVibrStepTemp];
+            gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
         pressure = U1*temperature*UniversalGasConstant/molMass;
         double dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
@@ -223,7 +223,7 @@ void CO2Solver::solve()
         auto pressureR = pressure;
         pressureR.removeFirst();
         solveFlux(U1L, U2L, pressureL, U1R, U2R,pressureR);
-        auto res = additionalSolver.SolveEvolutionExplFirstOrder(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
+        auto res = additionalSolver.SolveEvolutionExplFirstOrderForO2(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
         auto copyU1 = U1;
         auto copyU2 = U2;
         auto copyU3 = U3;
@@ -288,7 +288,7 @@ double CO2Solver::getEnergyTemp(double energy)
 {
     for(auto i = 0 ; i < Energy.size(); i++)
         if( energy < Energy[i])
-            return (i-1)  * energyStepTemp + energyStartTemp;
+            return (i)  * energyStepTemp + energyStartTemp;
     return (Energy.size()-1) * energyStepTemp + energyStartTemp;
 }
 

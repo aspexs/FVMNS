@@ -76,7 +76,7 @@ void Co22TSolverK::prepareSolving()
     //leftEnergy = rightFullEnergy + pow(rightParam.velocity,2)/2 + rightParam.pressure/rightParam.density;
     for(auto i  = 1; i < solParam.NumCell+1; i++)
     {
-        if(i < 10)
+        if(i < solParam.NumCell/2+1)
         {
             U1[i] = leftParam.density;
             U2[i] = leftParam.density*leftParam.velocity;
@@ -159,76 +159,6 @@ void Co22TSolverK::calcRiemanPStar()
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
     futureWatcher.waitForFinished();
-}
-
-void Co22TSolverK::calcFliux()
-{
-//    QFutureWatcher<void> futureWatcher;
-//    const std::function<void(int&)> calcFlux = [this](int& i)
-//    {
-//        mutex.lock();
-//        auto point = rezultAfterPStart[i];
-//        //point.temp = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
-//        //point.pressure = left_pressure[i];
-//        //point.density = left_density[i];
-//        //point.density = leftParam.density*leftParam.velocity/point.velocity;
-
-//        double tempL = Tl[i];// left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
-//        double tempR = Tr[i];//right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
-//        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h*2;
-//        auto tempLtv = left_Tv[i];//EnergyVibr[(left_Tv[i] - energyStartTemp)/energyStepTemp];
-//        auto tempRtv = right_Tv[i];//EnergyVibr[(right_Tv[i] - energyStartTemp)/energyStepTemp];
-//        double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
-//        //double Tx = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
-//        double Tv = tempLtv;//tempRtv;//(tempRtv + tempLtv)/2;//getEnergyVibrTemp(energyVibr);
-//        double energyVibr = AdditionalSolver::vibrEnergy(0,Tv);
-//        Txx[i] = Tx;
-//        pres[i] = point.pressure;
-//        Tvv[i] = Tv;
-//        T__[i] = point.velocity;
-//        mutex.unlock();
-//        //double omega11 = AdditionalSolver::getOmega11(Tx);
-//        //double omega22 = AdditionalSolver::getOmega22(Tx);
-//        //double zCO2Vibr = AdditionalSolver::ZCO2Vibr(Tv);
-//        //double cVibr = AdditionalSolver::CVibr(Tv, zCO2Vibr);
-//        //double etta = additionalSolver.shareViscosityOmega(0,Tx);//(5*kB*Tx) /(8*omega22);
-
-//        double Evibr = AdditionalSolver::vibrEnergy(0,Tx);
-//        double Etr_rot = 5.0/2*kB*Tx/mass;
-//        //double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);// (kB*Tx/betta)*0.16;
-//        double P =0;//  (4.0/3*etta + zetta)*du_dx;
-//       // double dt_dx = (tempR - tempL)/delta_h;
-//        //double dtv_dx = (tempRtv - tempLtv)/delta_h;
-//        //double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv)* dtv_dx;// -(3.0*kB*Tx)/(8.0*omega11)*cVibr* dtv_dx;
-//        //double qTr =-additionalSolver.lambdaTr_Rot(Tx)*dt_dx;//-((75.0*pow(kB,2)*Tx)/(32.0*mass*omega22) + (3.0*kB*Tx)/(8.0*omega11)*kB/mass)*dt_dx ;
-
-//        double a=-18.19;
-//        double b=40.47;
-//        double c=0;
-//        double d=0.00423;
-//        //double tauVibr  = exp(a+b*pow(Tv,-1.0/3)+d/(pow(Tv,-1.0/3)))/(point.pressure/101325);
-//        double tauVibr1 = exp(a+b*pow(Tx,-1.0/3)+d/(pow(Tx,-1.0/3)))/(point.pressure/101325);
-//        double entalpi = Etr_rot + energyVibr + point.pressure/point.density + pow(point.velocity,2)/2;
-//        auto deltaE = Evibr - energyVibr;
-//        ////F1[i] = (point.density * point.velocity);
-//        ////F2[i] = (F1[i]*point.velocity + point.pressure - P);
-//        ////F3[i] = (F1[i]*entalpi - P*point.velocity + qVibr + qTr);
-
-//        ////auto r = point.density/tauVibr1*deltaE*delta_h;
-//        ////F4[i] =  F1[i]*energyVibr + qVibr - r;
-//        F1[i]  = point.density * point.velocity;
-//        F2[i]  = point.density * point.velocity*point.velocity + point.pressure;
-//        F3[i]  = point.density * point.velocity*entalpi;
-//        F4[i]  = point.density * point.velocity*energyVibr;
-//        F11[i] = 0;
-//        F22[i] = 0;//-P*point.velocity;
-//        F33[i] = 0;//-additionalSolver.lambdaTr_Rot(Tx)*Tx - additionalSolver.lambdaVibr2(Tx,Tv)*Tv - P*pow(point.velocity,2);
-//        F44[i] = 0;//-additionalSolver.lambdaVibr2(Tx,Tv)*Tv;
-//          R[i] = point.density/tauVibr1*deltaE;
-
-//    };
-//    futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
-//    futureWatcher.waitForFinished();
 }
 
 void Co22TSolverK::solve()

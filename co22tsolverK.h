@@ -11,7 +11,6 @@ public:
     void prepareSolving() override;
     void solveFlux(const Matrix& U1, const Matrix& U2, const Matrix& U3, const Matrix& U4);
     void calcRiemanPStar();
-    void calcFliux();
 public slots:
     void solve() override;
     void setTypePlot(int i) override;

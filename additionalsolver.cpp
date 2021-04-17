@@ -999,16 +999,17 @@ double AdditionalSolver::TauRot(double T, double P)
 
 double AdditionalSolver::TauVibr(double T, double P)
 {
-    P = P/101325;
+    //P = P/101325;
     double a=-18.19;
     double b=40.47;
     double c=0;
     double d=0.00423;
-    auto e = a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3));
-    auto e2 = a+b*pow(T,1.0/3)+c*pow(T,2.0/3)+d/(pow(T,1.0/3));
-    auto r = exp(e);
-    auto r2 = exp(e2);
-    return r/P;
+    //auto e = a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3));
+    //auto e2 = a+b*pow(T,1.0/3)+c*pow(T,2.0/3)+d/(pow(T,1.0/3));
+    //auto r = exp(e);
+    //auto r2 = exp(e2);
+    //return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/P;
+    return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))*101325/P;
 }
 
 double AdditionalSolver::lambda(double T, double CVibr)
@@ -1037,10 +1038,10 @@ double AdditionalSolver::lambdaVibr2(double T, double Tv)
 
 double AdditionalSolver::lambdaVibr(double startT, double currentT, double density, double pressure )
 {
-    return TauVibr(currentT, pressure);
-    //double zCO2Vibr = ZCO2Vibr(currentT);
-    //double cVibr = CVibr(currentT, zCO2Vibr);
-    //return (3.0*kB*currentT)/(8.0*getOmega11(currentT))*(Crot() + cVibr);
+    //return TauVibr(currentT, pressure);
+    double zCO2Vibr = ZCO2Vibr(currentT);
+    double cVibr = CVibr(currentT, zCO2Vibr);
+    return (3.0*kB*currentT)/(8.0*getOmega11(currentT))*(Crot() + cVibr);
 }
 
 double AdditionalSolver::getOmega22(double T)
