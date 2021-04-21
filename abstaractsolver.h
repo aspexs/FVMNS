@@ -31,12 +31,14 @@ public:
     int typeEnergy = 0;
     AdditionalSolver additionalSolver;
     additionalSolverForCO2 additionalSolverCo2;
+
+    QVector<double> pres, R, P, Q_v, Q_t, T, Tv;
+    Matrix U1, U2, U3, U4;
 public slots:
     void pause();
     void breakSolver();
     void setTypePlot(int i);
 protected:
-    Matrix U1, U2, U3, U4;
     Matrix F1, F2, F3, F4;
     QVector <double> x;
     QVector<int> vectorForParallelSolving;
@@ -51,6 +53,7 @@ protected:
     Matrix right_pressure;
     Matrix left_Tv;
     Matrix right_Tv;
+    Matrix Tl,Tr;
     QVector<macroParam> rezultAfterPStart;
     QMutex mutex;
     QList<double> CvibrMass;
@@ -64,7 +67,7 @@ protected:
     double energyStartTemp;
     double energyStepTemp;
 
-    QVector<double> pres, R, P, Q_v, Q_t, T, Tv;
+
     void prepareVectors();
 
 signals:

@@ -56,7 +56,7 @@ void Co22TSolver::prepareSolving()
     prepareVectors();
 }
 
-void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl , Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr, Matrix EnergyFull)
+void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl , Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr)
 {
     left_density   = U1L;
     right_density  = U1R;
@@ -193,7 +193,7 @@ void Co22TSolver::solve()
         pressureR.removeFirst();
         TvR.removeFirst();
 
-        solveFlux(U1L, U2L, pressureL,TvL,Templ, U1R, U2R,pressureR, TvR, TempR, energyFull);
+        solveFlux(U1L, U2L, pressureL,TvL,Templ, U1R, U2R,pressureR, TvR, TempR);
         auto res = additionalSolver.SEEFOForCO2(F1, F2,F3,F4, U1, U2,U3, U4,dt,delta_h,{},{},{},{},R);
 
         auto copyU1 = U1;

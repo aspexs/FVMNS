@@ -39,7 +39,7 @@ void CO2Solver::prepareSolving()
     prepareVectors();
 }
 
-void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, Matrix U2R, Matrix pressureR)
+void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, Matrix U2R, Matrix pressureR, Matrix Tl, Matrix Tr)
 {
     left_density   = U1L;
     right_density  = U1R;
@@ -47,6 +47,8 @@ void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, 
     right_velocity = U2R / right_density;
     left_pressure  = pressureL;
     right_pressure = pressureR;
+    this->Tl = Tl;
+    this->Tr = Tr;
     calcRiemanPStar();
     calcFliux();
 }
@@ -88,8 +90,8 @@ void CO2Solver::calcFliux()
     {
         mutex.lock();
         auto point = rezultAfterPStart[i];
-        double tempL = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
-        double tempR = right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
+        double tempL = Tl[i];
+        double tempR = Tr[i];
         auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
@@ -130,7 +132,7 @@ void CO2Solver::solve()
         Matrix velosity = U2/U1;
         auto energyReal = U3/U1 - Matrix::POW(velosity,2)/2; // real full energy
         Matrix gammas;
-        double Cv = 5.0/2;
+        double Cv = 5.0/2* kB/mass;
         T.clear();
         pres.clear();
         for (auto energy: energyReal)
@@ -146,13 +148,18 @@ void CO2Solver::solve()
         auto U3L = U3; U3L.removeLast();
         auto pressureL = pres;
         pressureL.removeLast();
+        auto Templ = T;
+        Templ.removeLast();
 
         auto U1R = U1; U1R.removeFirst();
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
         auto pressureR = pres;
         pressureR.removeFirst();
-        solveFlux(U1L, U2L, pressureL, U1R, U2R,pressureR);
+        auto TempR = T;
+        TempR.removeFirst();
+
+        solveFlux(U1L, U2L, pressureL, U1R, U2R,pressureR,Templ,TempR);
         auto res = additionalSolver.SolveEvolutionExplFirstOrderForO2(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
         auto copyU1 = U1;
         auto copyU2 = U2;

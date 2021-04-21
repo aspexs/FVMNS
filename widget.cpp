@@ -328,17 +328,32 @@ void Widget::on_pushButton_csv_clicked()
         else if(ui->comboBox_typePlot->currentIndex() == 6)
             nameFile = "/Q_vibr.csv";
 
-
-        QFile file(QDir::currentPath() + nameFile);
+        QFile file(QDir::currentPath() + "/AllParams.csv");
         if(file.open(QFile::WriteOnly))
         {
             QTextStream out(&file);
-            for(int i = 0; i <_x.size(); i ++)
-            {
-                out << _x[i] << ";" << _y[i] << ";"<< _y2[i] <<"\n";
-            }
-            out << _time;
+            out << "Давление" << ";" << "Плотность" << ";" << "Скорость" << ";"
+                << "Температура" << ";"<< "Колеательная температура" << ";"
+                << "Тензор напряжения" << ";"<< "Постепательный тепловой поток" << ";"
+                << "Колебательный тепловой поток" << ";"<<"\n";
+             for(int i = 0; i <_x.size(); i ++)
+             {
+                out << solver->pres[i] << ";" << solver->U1[i] << ";"<< solver->U2[i]/solver->U1[i] << ";"
+                    << solver->T[i] << ";"<< solver->Tv[i] << ";"<< solver->P[i] << ";"
+                    << solver->Q_t[i] << ";"<< solver->Q_v[i] << ";" <<"\n";
+             }
+             out << _time;
         }
+        // QFile file(QDir::currentPath() + nameFile);
+        // if(file.open(QFile::WriteOnly))
+        // {
+        //     QTextStream out(&file);
+        //     for(int i = 0; i <_x.size(); i ++)
+        //     {
+        //         out << _x[i] << ";" << _y[i] << ";"<< _y2[i] <<"\n";
+        //     }
+        //     out << _time;
+        // }
         file.close();
     }
 }
