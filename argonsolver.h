@@ -15,7 +15,7 @@ public:
     void calcFliux();
 public slots:
     void solve() override;
-    void setTypePlot(int i) override;
+    void setTypePlote(int i);
 
 };
 

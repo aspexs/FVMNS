@@ -69,10 +69,10 @@ void OxygenSolver::solve()
         auto EVibr = U4/U1;
         auto energyFull = U3/U1 - Matrix::POW(velosity,2)/2;
         auto E_tr_rot = energyFull - EVibr;
-
-        Matrix T, Tv;
+        T.clear();
+        Tv.clear();
+        pres.clear();
         Matrix gammas;
-        Matrix pressure;
         for (auto energy: EVibr)
         {
             auto TempTv = as.getTempFromEnergy(energy);
@@ -84,24 +84,14 @@ void OxygenSolver::solve()
             double Cv = 5.0/2 * kB/mass + as.getC_V(T.last());
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
-        pressure = U1*T*UniversalGasConstant/molMass;
-        //auto nu_CO2 =leftParam.pressure/(kB*leftParam.temp);
-        //double Cv = 5.0/2 * kB/mass + as.getC_V(leftParam.temp);
-        //auto gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-        //auto maxVel = solParam.Ma*sqrt(gamma * UniversalGasConstant / nu_CO2 * leftParam.temp);
-
-        //auto c = leftParam.pressure*gamma/leftParam.density;
-        //auto temp = maxVel + c;
-
-        //dt = solParam.CFL*pow(delta_h,2)/temp/10;
-
-        dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
+        pres = U1*T*UniversalGasConstant/molMass;
+        dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pres, delta_h,solParam,gammas);
         timeSolvind.push_back(dt);
 
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
         auto U3L = U3; U3L.removeLast();
-        auto pressureL = pressure;
+        auto pressureL = pres;
         auto TvL = Tv;
         auto Templ = T;
         Templ.removeLast();
@@ -111,7 +101,7 @@ void OxygenSolver::solve()
         auto U1R = U1; U1R.removeFirst();
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
-        auto pressureR = pressure;
+        auto pressureR = pres;
         auto TvR = Tv;
         auto TempR = T;
         TempR.removeFirst();
@@ -134,9 +124,7 @@ void OxygenSolver::solve()
         U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
         U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
         U4[0]=U4[1];   U4[U4.size() - 1] =U4[U4.size() - 2];
-        Tvv.last() =  Tv[Tv.size() -2];
         pres.last() =  pres[pres.size() -2];
-        T__.last() = T__[T__.size()-2];
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);
@@ -146,23 +134,6 @@ void OxygenSolver::solve()
         if(timeSolvind.last() >solParam.t_fin)
             break;
     }
-}
-
-void OxygenSolver::setTypePlot(int i)
-{
-    solParam.typePlot = i;
-    QVector<double> values, additionalValues,additionalValues2 ;
-    switch (solParam.typePlot)
-    {
-    case 0: values = pres;break;
-    case 1: values = U1; break;
-    case 2: values = Tvv;break;
-    case 3: values = T__; additionalValues = Tvv; break;
-
-    default: values = U1; break;
-    }
-    emit updateGraph(x, values, solParam.lambda);
-    emit updateAdditionalGraph(x, additionalValues, solParam.lambda);
 }
 
 void OxygenSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL,Matrix TvL,
@@ -176,12 +147,6 @@ void OxygenSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL,Matrix TvL
     right_pressure = pressureR;
     left_Tv = TvL;
     right_Tv = TvR;
-    Tvv.clear();
-    T__.clear();
-    pres.clear();
-    Tvv.resize(U1.size());
-    pres.resize(U1.size());
-    T__.resize(U1.size());
     calcRiemanPStar();
     calcFliux();
 }
@@ -229,8 +194,6 @@ void OxygenSolver::calcFliux()
         double Tx =  point.pressure/(point.density*UniversalGasConstant/molMass);
         double Tv = (tempRtv+tempLtv)/2;
         pres[i] = point.pressure;
-        T__[i] = Tx;
-        Tvv[i] = Tv;
         mutex.unlock();
 
         double etta = as.getEtta(Tx);//additionalSolver.shareViscosity[typeShareVisc](leftParam.temp, Tx,0,0);

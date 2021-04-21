@@ -107,6 +107,8 @@ void CO2Solver::calcFliux()
         F1[i] = point.density * point.velocity;
         F2[i] = F1[i]*point.velocity + point.pressure -P;
         F3[i] = F1[i]*entalpi - P*point.velocity + q;
+        Q_t[i] = q;
+        this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -128,27 +130,27 @@ void CO2Solver::solve()
         Matrix velosity = U2/U1;
         auto energyReal = U3/U1 - Matrix::POW(velosity,2)/2; // real full energy
         Matrix gammas;
-        Matrix pressure;
-        Matrix temperature;
         double Cv = 5.0/2;
+        T.clear();
+        pres.clear();
         for (auto energy: energyReal)
         {
-            temperature.push_back(getEnergyTemp(energy));
+            T.push_back(getEnergyTemp(energy));
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
-        pressure = U1*temperature*UniversalGasConstant/molMass;
-        double dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pressure, delta_h,solParam,gammas);
+        pres = U1*T*UniversalGasConstant/molMass;
+        double dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pres, delta_h,solParam,gammas);
             timeSolvind.push_back(dt+timeSolvind.last());
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
         auto U3L = U3; U3L.removeLast();
-        auto pressureL = pressure;
+        auto pressureL = pres;
         pressureL.removeLast();
 
         auto U1R = U1; U1R.removeFirst();
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
-        auto pressureR = pressure;
+        auto pressureR = pres;
         pressureR.removeFirst();
         solveFlux(U1L, U2L, pressureL, U1R, U2R,pressureR);
         auto res = additionalSolver.SolveEvolutionExplFirstOrderForO2(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
@@ -167,7 +169,6 @@ void CO2Solver::solve()
         double rightEVibr2 = additionalSolver.vibrEnergy(0,T);
         double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
         U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-        //U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
 
         if(i % solParam.PlotIter == 0)
         {
@@ -179,37 +180,6 @@ void CO2Solver::solve()
             break;
     }
     breaksolve = false;
-}
-
-void CO2Solver::setTypePlot(int i)
-{
-    solParam.typePlot = i;
-    QVector<double> values;
-    switch (solParam.typePlot)
-    {
-    case 0:
-    {
-        QVector<double> temp;
-        Matrix temperature;
-        auto energyReal = U3/U1 - Matrix::POW(U2/U1,2)/2;
-        for (auto energy: energyReal)
-            temperature.push_back(getEnergyTemp(energy));
-        values = U1*temperature*UniversalGasConstant/molMass;break;
-    }
-    case 1: values = U1; break;
-    case 2: values = U2/U1;break;
-    case 3:
-    {
-        QVector<double> temp;
-        Matrix temperature;
-        auto energyReal = U3/U1 - Matrix::POW(U2/U1,2)/2;
-        for (auto energy: energyReal)
-            temperature.push_back(getEnergyTemp(energy));
-        values = temperature;break;
-    }
-    default: values = U1; break;
-    }
-    emit updateGraph(x, values, solParam.lambda);
 }
 
 double CO2Solver::getEnergyTemp(double energy)

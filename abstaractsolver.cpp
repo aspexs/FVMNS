@@ -117,3 +117,22 @@ void AbstaractSolver::prepareVectors()
     R.resize(solParam.NumCell+1);
     rezultAfterPStart.resize(solParam.NumCell+1);
 }
+void AbstaractSolver::setTypePlot(int i)
+{
+    solParam.typePlot = i;
+    QVector<double> values, additionalValues;
+    //additionalValues.resize(x.size());
+    switch (solParam.typePlot)
+    {
+    case 0: values = pres;break;
+    case 1: values = U1; break;
+    case 2: values = U2/U1;break;
+    case 3: values = T; additionalValues = Tv; break;
+    case 4: values = P;break;
+    case 5:values = Q_t;break;
+    case 6:values = Q_v;break;
+    default: values = U1; break;
+    }
+    emit updateGraph(x, values, solParam.lambda);
+    emit updateAdditionalGraph(x, additionalValues, solParam.lambda);
+}

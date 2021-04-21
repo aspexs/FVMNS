@@ -17,7 +17,6 @@ public:
 
 public slots:
     void solve() override;
-    void setTypePlot(int i) override;
 private:
     double getEnergyTemp(double energy);
     double getVibrTemp(double CVibr);

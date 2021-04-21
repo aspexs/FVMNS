@@ -8,7 +8,6 @@
 #include "co2solver.h"
 #include "co22tsolver.h"
 #include "co22tsolverK.h"
-#include "co2solver2T.h"
 #include <additionalsolver.h>
 #include <chart.h>
 #include <QChartView>

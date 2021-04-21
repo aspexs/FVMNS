@@ -16,7 +16,6 @@ public:
 
 public slots:
     void solve() override;
-    void setTypePlot(int i) override;
 };
 
 #endif // NITROGENSOLVER_H

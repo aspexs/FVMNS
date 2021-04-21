@@ -49,7 +49,7 @@ void ArgonSolver::solve()
         U3[U3.size() - 1] = rightParam.pressure/(solParam.Gamma-1)+0.5*pow(U2[U2.size() - 1]/U1[U1.size() - 1],2)*U1[U1.size() - 1];
         if(i % solParam.PlotIter == 0)
         {
-            setTypePlot(solParam.typePlot);
+            setTypePlote(solParam.typePlot);
             emit updateTime(timeSolvind.last());
             QThread::msleep(200);
         }
@@ -60,7 +60,7 @@ void ArgonSolver::solve()
 
 }
 
-void ArgonSolver::setTypePlot(int i)
+void ArgonSolver::setTypePlote(int i)
 {
     solParam.typePlot = i;
     QVector<double> values;

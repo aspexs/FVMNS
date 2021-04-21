@@ -119,15 +119,10 @@ void Co22TSolver::calcFliux()
         double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
 
         double P = (4.0/3*etta + zetta)*du_dx;
-        this->P[i] = P;
         double dt_dx = (tempR - tempL)/delta_h;
         double dtv_dx = (tempRtv - tempLtv)/delta_h;
-
         double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv)* dtv_dx;
         double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
-
-        Q_v[i] = qVibr;
-        Q_t[i] = qTr;
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double entalpi = Etr_rot + energyVibr + point.pressure/point.density + pow(point.velocity,2)/2;
 
@@ -135,6 +130,9 @@ void Co22TSolver::calcFliux()
         F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr + qTr;
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
+        Q_v[i] = qVibr;
+        Q_t[i] = qTr;
+        this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -158,8 +156,8 @@ void Co22TSolver::solve()
         auto E_tr_rot = energyFull - EVibr;
         T.clear();
         Tv.clear();
+        pres.clear();
         Matrix gammas;
-        Matrix pressure;
         for (auto energy: EVibr)
         {
             auto TempTv = getEnergyVibrTemp(energy);
@@ -171,15 +169,14 @@ void Co22TSolver::solve()
             T.push_back(energy*2*mass/(5*kB));
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
-        pressure = U1*T*UniversalGasConstant/molMass;
-        pres = pressure;
-        dt = additionalSolver.getTimeStepFull(velosity, U1, pressure, delta_h,solParam,gammas);
+        pres = U1*T*UniversalGasConstant/molMass;
+        dt = additionalSolver.getTimeStepFull(velosity, U1, pres, delta_h,solParam,gammas);
         timeSolvind.push_back(dt+timeSolvind.last());
         //pres = pressure;
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
         auto U3L = U3; U3L.removeLast();
-        auto pressureL = pressure;
+        auto pressureL = pres;
         auto TvL = Tv;
         auto Templ = T;
         Templ.removeLast();
@@ -189,7 +186,7 @@ void Co22TSolver::solve()
         auto U1R = U1; U1R.removeFirst();
         auto U2R = U2; U2R.removeFirst();
         auto U3R = U3; U3R.removeFirst();
-        auto pressureR = pressure;
+        auto pressureR = pres;
         auto TvR = Tv;
         auto TempR = T;
         TempR.removeFirst();
@@ -253,27 +250,6 @@ void Co22TSolver::solve()
             break;
         }
     }
-}
-
-void Co22TSolver::setTypePlot(int i)
-{
-    solParam.typePlot = i;
-    QVector<double> values, additionalValues;
-    //additionalValues.resize(x.size());
-    switch (solParam.typePlot)
-    {
-    case 0: values = pres;break;
-    case 1: values = U1; break;
-    case 2: values = U2/U1;break;
-    case 3: values = T; additionalValues = Tv; break;
-    case 4: values = P;break;
-    case 5:values = Q_t;break;
-    case 6:values = Q_v;break;
-
-    default: values = U1; break;
-    }
-    emit updateGraph(x, values, solParam.lambda);
-    emit updateAdditionalGraph(x, additionalValues, solParam.lambda);
 }
 
 void Co22TSolver::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4)

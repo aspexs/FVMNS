@@ -102,6 +102,8 @@ void NitrogenSolver::calcFliux()
         F1[i] = (point.density * point.velocity);
         F2[i] = (F1.last()*point.velocity + point.pressure -G);
         F3[i] = ((point.pressure/(solParam.Gamma - 1) + point.density* pow(point.velocity,2)/2 + point.pressure) * point.velocity -G*point.velocity + q);
+        Q_t[i] = q;
+        this->P[i] = G;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -156,19 +158,4 @@ void NitrogenSolver::solve()
             break;
     }
     breaksolve = false;
-}
-
-void NitrogenSolver::setTypePlot(int i)
-{
-    solParam.typePlot = i;
-    QVector<double> values;
-    switch (solParam.typePlot)
-    {
-        case 0: values = (U3 - Matrix::POW(U2 / U1 ,2) * 0.5 * U1) * (solParam.Gamma-1); break;
-        case 1: values = U1; break;
-        case 2: values = U2 / U1 ;break;
-        case 3: values = ((U3 - Matrix::POW(U2 / U1 ,2) * 0.5 * U1) * (solParam.Gamma-1))/(U1 *UniversalGasConstant/molMass);break;
-        default: values = U1; break;
-    }
-    emit updateGraph(x, values, solParam.lambda);
 }

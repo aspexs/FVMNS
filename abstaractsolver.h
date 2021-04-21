@@ -34,7 +34,7 @@ public:
 public slots:
     void pause();
     void breakSolver();
-    virtual void setTypePlot(int i) = 0;
+    void setTypePlot(int i);
 protected:
     Matrix U1, U2, U3, U4;
     Matrix F1, F2, F3, F4;

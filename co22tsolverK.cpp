@@ -177,23 +177,6 @@ void Co22TSolverK::solve()
     }
 }
 
-void Co22TSolverK::setTypePlot(int i)
-{
-    solParam.typePlot = i;
-    QVector<double> values, additionalValues ;
-    switch (solParam.typePlot)
-    {
-    case 0: values = pres;break;
-    case 1: values = U1; break;
-    case 2: values = U2/U1;break;
-    case 3: values = T; additionalValues = Tv; break;
-
-    default: values = U1; break;
-    }
-    emit updateGraph(x, values, solParam.lambda);
-    emit updateAdditionalGraph(x, additionalValues, solParam.lambda);
-}
-
 void Co22TSolverK::calcHLLE(const Matrix& U1,const Matrix& U2,const Matrix& U3,const Matrix& U4)
 {
     auto U1L = U1;              U1L.removeLast();
@@ -278,6 +261,10 @@ void Co22TSolverK::calcHLLE(const Matrix& U1,const Matrix& U2,const Matrix& U3,c
          F2[i] = res2;
          F3[i] = res3;
          F4[i] = res4;
+
+         Q_v[i] = (qVibrL + qVibrR) / 2;
+         Q_t[i] = (qTrL + qTrR) / 2;
+         this->P[i] = (PR + PL) / 2;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calc));
     futureWatcher.waitForFinished();

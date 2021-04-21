@@ -13,7 +13,6 @@ public:
     void calcRiemanPStar();
 public slots:
     void solve() override;
-    void setTypePlot(int i) override;
 
 private:
     Matrix EnergyFullL, EnergyFullR;

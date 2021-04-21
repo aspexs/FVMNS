@@ -14,15 +14,12 @@ public:
      void prepareSolving() override;
 public slots:
     void solve() override;
-    void setTypePlot(int i) override;
-
 private:
     additionalSolverForOxygen as;
     void solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL,Matrix TvL,
                    Matrix U1R, Matrix U2R, Matrix pressureR,Matrix TvR);
     void calcRiemanPStar();
     void calcFliux();
-    QVector<double> Tvv, pres, T__;
     double dt;
 signals:
 
