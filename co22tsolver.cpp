@@ -53,42 +53,7 @@ void Co22TSolver::prepareSolving()
             U4[i] = rightParam.density*rightEVibr;
         }
     }
-
-    double x_right =solParam.lambda*solParam.lambdaSol; //% правая граница
-    delta_h = (x_right) / solParam.NumCell;
-    x.clear();
-    x.push_back(0+0.5*delta_h);
-    for(auto i = 1; i < solParam.NumCell; i++)
-        x.push_back(x[i-1] + delta_h);
-
-
-    x.push_back(x_right);
-    x.push_front(0);
-
-    U1[0]=U1[1];
-    U2[0]=solParam.typeLeftBorder*U2[1];
-    U3[0]=U3[1];
-    U4[0]=U4[1];
-    U1[solParam.NumCell+1]=U1[solParam.NumCell];
-    U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
-    U3[solParam.NumCell+1]=U3[solParam.NumCell];
-    U4[solParam.NumCell+1]=U4[solParam.NumCell];
-
-    timeSolvind.push_back(0);
-
-    for(int i = 0 ; i<  solParam.NumCell+1; i++)
-        vectorForParallelSolving.push_back(i);
-    F1.resize(solParam.NumCell+1);
-    F2.resize(solParam.NumCell+1);
-    F3.resize(solParam.NumCell+1);
-    F4.resize(solParam.NumCell+1);
-    P.resize(solParam.NumCell+2);
-    Q_v.resize(solParam.NumCell+2);
-    Q_t.resize(solParam.NumCell+2);
-
-    E__.resize(U1.size());
-    R.resize(solParam.NumCell+1);
-    rezultAfterPStart.resize(solParam.NumCell+1);
+    prepareVectors();
 }
 
 void Co22TSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl , Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr, Matrix EnergyFull)
@@ -294,7 +259,7 @@ void Co22TSolver::setTypePlot(int i)
 {
     solParam.typePlot = i;
     QVector<double> values, additionalValues;
-    additionalValues.resize(x.size());
+    //additionalValues.resize(x.size());
     switch (solParam.typePlot)
     {
     case 0: values = pres;break;

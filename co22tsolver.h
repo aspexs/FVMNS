@@ -19,8 +19,7 @@ public slots:
 
 private:
     double dt, error;
-    QVector<double> pres, R, P, Q_v, Q_t;
-    Matrix T, Tv, Tl,Tr,E__;
+    Matrix Tl,Tr;
     void calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
 
     double getEnergyVibrTemp(double energy);

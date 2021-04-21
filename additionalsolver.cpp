@@ -1097,14 +1097,15 @@ macroParam AdditionalSolver::bondaryConditionRG2T(macroParam left, solverParams 
 QStringList AdditionalSolver::runPython(macroParam left,int mlt )
 {
 
-    QStringList arguments { "C:\\Users\\Aspexs\\PycharmProjects\\testArgon\\Fun.py",
+    QStringList arguments { "Fun.py",
                             left.gas, QString::number(left.velocity), QString::number(left.density),
-                            QString::number(left.temp), "E:\\Text.txt",
+                            QString::number(left.temp), "Text.txt",
                             QString::number(mlt)};
     QProcess p;
-    p.start("C:\\Users\\Aspexs\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe", arguments);
+    p.start("python", arguments);
     p.waitForFinished();
-    return QString(p.readAllStandardOutput()).replace("[","").replace("]","").replace("\r\n","").split(" ");
+    qDebug() << p.readAllStandardError();
+    return QString(p.readAll()).replace("[","").replace("]","").replace("\r\n","").split(" ");
 
 }
 

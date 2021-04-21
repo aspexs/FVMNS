@@ -6,8 +6,6 @@ CO2Solver::CO2Solver(QObject *parent): AbstaractSolver(parent)
 
 void CO2Solver::prepareSolving()
 {
-    AdditionalSolver().TauVibr(1200, 20);
-    auto e = additionalSolver.ZCO2Vibr(1200);
     U1.resize(solParam.NumCell+2);
     U2.resize(solParam.NumCell+2);
     U3.resize(solParam.NumCell+2);
@@ -38,29 +36,7 @@ void CO2Solver::prepareSolving()
             U3[i] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
         }
     }
-    double x_right =solParam.lambda*solParam.lambdaSol; //% правая граница
-    delta_h = (x_right) / solParam.NumCell;
-    x.clear();
-    x.push_back(0+0.5*delta_h);
-    for(auto i = 1; i < solParam.NumCell; i++)
-        x.push_back(x[i-1] + delta_h);
-    x.push_back(x_right);
-    x.push_front(0);
-    U1[0]=U1[1];
-    U2[0]=solParam.typeLeftBorder*U2[1];
-    U3[0]=U3[1];
-    U1[solParam.NumCell+1]=U1[solParam.NumCell];
-    U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
-    U3[solParam.NumCell+1]=U3[solParam.NumCell];
-    timeSolvind.push_back(0);
-
-    for(int i = 0 ; i<  solParam.NumCell+1; i++)
-        vectorForParallelSolving.push_back(i);
-    F1.resize(solParam.NumCell+1);
-    F2.resize(solParam.NumCell+1);
-    F3.resize(solParam.NumCell+1);
-    rezultAfterPStart.resize(solParam.NumCell+1);
-
+    prepareVectors();
 }
 
 void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, Matrix U2R, Matrix pressureR)
@@ -114,29 +90,18 @@ void CO2Solver::calcFliux()
         auto point = rezultAfterPStart[i];
         double tempL = left_pressure[i]/(left_density[i]*UniversalGasConstant/molMass);
         double tempR = right_pressure[i]/(right_density[i]*UniversalGasConstant/molMass);
-        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h*2;
+        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
 
         double etta = additionalSolver.shareViscosityOmega(leftParam.temp, Tx,0,0);
         double Cvibr = additionalSolver.CVibr(Tx, additionalSolver.ZCO2Vibr(Tx));
-        //double E = 0;
-        //if((Tx - CVibrStartTemp)/CVibrStepTemp < CvibrMass.size())
-        //{
-        //    Cvibr = CvibrMass[(Tx - CVibrStartTemp)/CVibrStepTemp];
-        //    E =  Energy[(Tx - CVibrStartTemp)/CVibrStepTemp];
-        //}
-        //else
-        //{
-        //    Cvibr = CvibrMass.last();
-        //    E = Energy.last();
-        //}
-         double energyVibr1 = additionalSolver.vibrEnergy(0,Tx);
-         double Etr_rot = 5.0/2*kB*Tx/mass;
+        double energyVibr1 = additionalSolver.vibrEnergy(0,Tx);
+        double Etr_rot = 5.0/2*kB*Tx/mass;
         double zetta =additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
         double P =  (4.0/3*etta + zetta)*du_dx;
         double lambda = additionalSolver.lambda(Tx, Cvibr);
-        double dt_dx = (tempR - tempL)/delta_h*2;
+        double dt_dx = (tempR - tempL)/delta_h;
         double q =   -lambda*dt_dx;
         double entalpi = Etr_rot + energyVibr1 + point.pressure/point.density + pow(point.velocity,2)/2;
         F1[i] = point.density * point.velocity;
@@ -165,10 +130,10 @@ void CO2Solver::solve()
         Matrix gammas;
         Matrix pressure;
         Matrix temperature;
+        double Cv = 5.0/2;
         for (auto energy: energyReal)
         {
             temperature.push_back(getEnergyTemp(energy));
-            double Cv = 5.0/2 * kB/mass+ CvibrMass[(temperature.last() - CVibrStartTemp)/CVibrStepTemp];
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
         pressure = U1*temperature*UniversalGasConstant/molMass;

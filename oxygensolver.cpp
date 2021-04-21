@@ -47,33 +47,7 @@ void OxygenSolver::prepareSolving()
             U4[i] = rightParam.density*rightEVibr;
         }
     }
-
-    double x_right =solParam.lambda*solParam.lambdaSol; //% правая граница
-    delta_h = (x_right) / solParam.NumCell;
-    x.clear();
-    x.push_back(0+0.5*delta_h);
-    for(auto i = 1; i < solParam.NumCell; i++)
-        x.push_back(x[i-1] + delta_h);
-    x.push_back(x_right);
-    x.push_front(0);
-    U1[0]=U1[1];
-    U2[0]=solParam.typeLeftBorder*U2[1];
-    U3[0]=U3[1];
-    U4[0]=U4[1];
-    U1[solParam.NumCell+1]=U1[solParam.NumCell];
-    U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
-    U3[solParam.NumCell+1]=U3[solParam.NumCell];
-    U4[solParam.NumCell+1]=U4[solParam.NumCell];
-
-    timeSolvind.push_back(0);
-
-    for(int i = 0 ; i<  solParam.NumCell+1; i++)
-        vectorForParallelSolving.push_back(i);
-    F1.resize(solParam.NumCell+1);
-    F2.resize(solParam.NumCell+1);
-    F3.resize(solParam.NumCell+1);
-    F4.resize(solParam.NumCell+1);
-    rezultAfterPStart.resize(solParam.NumCell+1);
+    prepareVectors();
 }
 
 void OxygenSolver::solve()

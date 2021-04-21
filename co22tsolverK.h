@@ -19,8 +19,6 @@ private:
     Matrix EnergyFullL, EnergyFullR;
     double dt;
      double leftEnergy;
-    QVector<double> pres, R, T,Tv;
-    Matrix F11, F22, F33,F44;
     void calcHLLE(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
     void calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
 

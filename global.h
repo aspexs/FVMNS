@@ -1,6 +1,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 #include <Qvector>
+#include <QtMath>
 
 const double Nav(6.02214129e23);
 const double UniversalGasConstant = 8.3144598;

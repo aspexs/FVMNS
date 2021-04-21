@@ -37,31 +37,7 @@ void NitrogenSolver::prepareSolving()
             U3[i] = rightParam.pressure/(solParam.Gamma-1)+0.5*pow(rightParam.velocity,2)*rightParam.density;
         }
     }
-    double x_right =solParam.lambda*solParam.lambdaSol; //% правая граница
-    delta_h = (x_right) / solParam.NumCell;
-    x.clear();
-    x.push_back(0+0.5*delta_h);
-    for(auto i = 1; i < solParam.NumCell; i++)
-        x.push_back(x[i-1] + delta_h);
-    x.push_back(x_right);
-    x.push_front(0);
-
-    solParam.typeRightBorder = 0;
-    U1[0]=U1[1];
-    U2[0]=solParam.typeLeftBorder*U2[1];
-    U3[0]=U3[1];
-    U1[solParam.NumCell+1]=U1[solParam.NumCell];
-    U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
-    U3[solParam.NumCell+1]=U3[solParam.NumCell];
-    timeSolvind.push_back(0);
-
-    for(int i = 0 ; i<  solParam.NumCell+1; i++)
-        vectorForParallelSolving.push_back(i);
-    F1.resize(solParam.NumCell+1);
-    F2.resize(solParam.NumCell+1);
-    F3.resize(solParam.NumCell+1);
-    rezultAfterPStart.resize(solParam.NumCell+1);
-
+    prepareVectors();
 }
 
 void NitrogenSolver::solveFlux(Matrix U1L, Matrix U2L, Matrix U3L, Matrix U1R, Matrix U2R, Matrix U3R)

@@ -64,6 +64,9 @@ protected:
     double energyStartTemp;
     double energyStepTemp;
 
+    QVector<double> pres, R, P, Q_v, Q_t, T, Tv;
+    void prepareVectors();
+
 signals:
    void updateGraph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateAdditionalGraph(QVector<double> x, QVector<double> y, double lambda = 1);

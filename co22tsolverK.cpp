@@ -55,41 +55,7 @@ void Co22TSolverK::prepareSolving()
             U4[i] = rightParam.density*rightEVibr;
         }
     }
-
-    double x_right =solParam.lambda*solParam.lambdaSol; //% правая граница
-    delta_h = (x_right) / solParam.NumCell;
-    x.clear();
-    x.push_back(0+0.5*delta_h);
-    for(auto i = 1; i < solParam.NumCell; i++)
-        x.push_back(x[i-1] + delta_h);
-    x.push_back(x_right);
-    x.push_front(0);
-    U1[0]=U1[1];
-    U2[0]=solParam.typeLeftBorder*U2[1];
-    U3[0]=U3[1];
-    U4[0]=U4[1];
-    U1[solParam.NumCell+1]=U1[solParam.NumCell];
-    U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
-    U3[solParam.NumCell+1]=U3[solParam.NumCell];
-    U4[solParam.NumCell+1]=U4[solParam.NumCell];
-
-    timeSolvind.push_back(0);
-
-    for(int i = 0 ; i<  solParam.NumCell+1; i++)
-        vectorForParallelSolving.push_back(i);
-    F1.resize(solParam.NumCell+1);
-    F2.resize(solParam.NumCell+1);
-    F3.resize(solParam.NumCell+1);
-    F4.resize(solParam.NumCell+1);
-
-    F11.resize(solParam.NumCell+1);
-    F22.resize(solParam.NumCell+1);
-    F33.resize(solParam.NumCell+1);
-    F44.resize(solParam.NumCell+1);
-
-
-    R.resize(solParam.NumCell+1);
-    rezultAfterPStart.resize(solParam.NumCell+1);
+    prepareVectors();
 }
 
 void Co22TSolverK::solveFlux(const Matrix& U1, const Matrix& U2, const Matrix& U3, const Matrix& U4)
@@ -159,7 +125,7 @@ void Co22TSolverK::solve()
         dt = additionalSolver.getTimeStepFull(velosity, U1, pressure, delta_h,solParam,gammas);
         timeSolvind.push_back(dt+timeSolvind.last());
         solveFlux(U1, U2, U3,U4);
-        auto res = additionalSolver.SEEFOForCO2(F1, F2,F3,F4, U1, U2,U3, U4,dt,delta_h,F11,F22,F33,F44,R);
+        auto res = additionalSolver.SEEFOForCO2(F1, F2,F3,F4, U1, U2,U3, U4,dt,delta_h,{},{},{},{},R);
 
         U1 = res[0];
         U2 = res[1];

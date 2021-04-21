@@ -77,7 +77,6 @@ void Chart::setAdditionalData(QVector<double> x, QVector<double> y, double lambd
     if(LocminY < minY)
         minY = LocminY;
     axisY()->setRange(minY, maxY);
-    //..axisY()->setRange(-0.2, 1.5);
     a_series->clear();
     if(TintMax < 1e-15)
         return;
