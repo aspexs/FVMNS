@@ -10,7 +10,7 @@ void CO2Solver::prepareSolving()
     U2.resize(solParam.NumCell+2);
     U3.resize(solParam.NumCell+2);
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
-    double Cv = 5.0/2 * kB/mass + CvibrMass[(leftParam.temp - CVibrStartTemp)/CVibrStepTemp];
+    double Cv = 5.0/2 * kB/mass;// + CvibrMass[(leftParam.temp - CVibrStartTemp)/CVibrStepTemp];
     double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
     leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
@@ -100,7 +100,7 @@ void CO2Solver::calcFliux()
         double Cvibr = additionalSolver.CVibr(Tx, additionalSolver.ZCO2Vibr(Tx));
         double energyVibr1 = additionalSolver.vibrEnergy(0,Tx);
         double Etr_rot = 5.0/2*kB*Tx/mass;
-        double zetta =additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
+        double zetta = additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
         double P =  (4.0/3*etta + zetta)*du_dx;
         double lambda = additionalSolver.lambda(Tx, Cvibr);
         double dt_dx = (tempR - tempL)/delta_h;
@@ -110,6 +110,7 @@ void CO2Solver::calcFliux()
         F2[i] = F1[i]*point.velocity + point.pressure -P;
         F3[i] = F1[i]*entalpi - P*point.velocity + q;
         Q_t[i] = q;
+        Ent[i] = entalpi;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
@@ -176,7 +177,7 @@ void CO2Solver::solve()
         double rightEVibr2 = additionalSolver.vibrEnergy(0,T);
         double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
         U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-
+Ent[Ent.size()-1] = Ent[Ent.size()-2];
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);

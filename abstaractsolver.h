@@ -32,8 +32,8 @@ public:
     AdditionalSolver additionalSolver;
     additionalSolverForCO2 additionalSolverCo2;
 
-    QVector<double> pres, R, P, Q_v, Q_t, T, Tv;
-    Matrix U1, U2, U3, U4;
+    QVector<double> R, P, Q_v, Q_t, T, Tv, Ent, Ent2;
+    Matrix U1, U2, U3, U4, pres;
 public slots:
     void pause();
     void breakSolver();

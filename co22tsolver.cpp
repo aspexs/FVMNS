@@ -16,7 +16,7 @@ void Co22TSolver::prepareSolving()
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
     double Cv = 5.0/2 * kB/mass;
     double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-    leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
+    leftParam.soundSpeed = sqrt(solParam.Gamma *leftParam.pressure/leftParam.density);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
     leftParam.tempIntr = leftParam.temp;
 
@@ -37,7 +37,7 @@ void Co22TSolver::prepareSolving()
 
     for(auto i  = 1; i < solParam.NumCell+1; i++)
     {
-        if(i < solParam.NumCell/2 +1)
+        if(i < solParam.NumCell/3 +1)
         {
             U1[i] = leftParam.density;
             U2[i] = leftParam.density*leftParam.velocity;
@@ -132,6 +132,7 @@ void Co22TSolver::calcFliux()
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
         Q_v[i] = qVibr;
         Q_t[i] = qTr;
+        Ent[i] = entalpi;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
@@ -157,6 +158,7 @@ void Co22TSolver::solve()
         T.clear();
         Tv.clear();
         pres.clear();
+        Ent2.clear();
         Matrix gammas;
         for (auto energy: EVibr)
         {
@@ -169,7 +171,10 @@ void Co22TSolver::solve()
             T.push_back(energy*2*mass/(5*kB));
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
+
         pres = U1*T*UniversalGasConstant/molMass;
+
+        //Ent2 = U3/U1;
         dt = additionalSolver.getTimeStepFull(velosity, U1, pres, delta_h,solParam,gammas);
         timeSolvind.push_back(dt+timeSolvind.last());
         //pres = pressure;
@@ -226,6 +231,9 @@ void Co22TSolver::solve()
          double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
          double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
          U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
+
+         Ent[Ent.size() - 1] = Ent[Ent.size() - 2];
+         // Ent2[Ent2.size() - 1] = Ent2[Ent2.size() - 2];
         ////    Вариант расчета при фиксированной правой части
         ///double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
         ///double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;

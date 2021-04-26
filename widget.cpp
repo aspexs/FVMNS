@@ -1,4 +1,4 @@
-#include "widget.h"
+﻿#include "widget.h"
 #include "ui_widget.h"
 #include <global.h>
 
@@ -332,15 +332,15 @@ void Widget::on_pushButton_csv_clicked()
         if(file.open(QFile::WriteOnly))
         {
             QTextStream out(&file);
-            out << "Давление" << ";" << "Плотность" << ";" << "Скорость" << ";"
+            out  << "X"<< "Давление" << ";" << "Плотность" << ";" << "Скорость" << ";"
                 << "Температура" << ";"<< "Колеательная температура" << ";"
                 << "Тензор напряжения" << ";"<< "Постепательный тепловой поток" << ";"
-                << "Колебательный тепловой поток" << ";"<<"\n";
+                << "Колебательный тепловой поток" << ";"<< "Энтальпия" << ";"<<"\n";
              for(int i = 0; i <_x.size(); i ++)
              {
-                out << solver->pres[i] << ";" << solver->U1[i] << ";"<< solver->U2[i]/solver->U1[i] << ";"
+                out << _x[i] << ";" << solver->pres[i] << ";" << solver->U1[i] << ";"<< solver->U2[i]/solver->U1[i] << ";"
                     << solver->T[i] << ";"<< solver->Tv[i] << ";"<< solver->P[i] << ";"
-                    << solver->Q_t[i] << ";"<< solver->Q_v[i] << ";" <<"\n";
+                    << solver->Q_t[i] << ";"<< solver->Q_v[i] << ";" <<solver->Ent[i] << ";" <<"\n";
              }
              out << _time;
         }

@@ -68,7 +68,9 @@ void Chart::setData(QVector<double> x, QVector<double> y, double lambda)
 
 void Chart::setAdditionalData(QVector<double> x, QVector<double> y, double lambda)
 {
-    if(x.size() != y.size())
+    QVector<double> e;
+    e.resize(x.size());
+    if(x.size() != y.size() || y == e)
         return;
     auto LocminY = *std::min_element(y.begin(), y.end());
     auto LocmaxY = *std::max_element(y.begin(), y.end());

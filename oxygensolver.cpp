@@ -124,7 +124,7 @@ void OxygenSolver::solve()
         U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
         U3[0]=U3[1];   U3[U3.size() - 1] =U3[U3.size() - 2];
         U4[0]=U4[1];   U4[U4.size() - 1] =U4[U4.size() - 2];
-        pres.last() =  pres[pres.size() -2];
+        pres[pres.size() - 1] =  pres[pres.size() -2];
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);
