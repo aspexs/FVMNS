@@ -4,88 +4,10 @@ Co22TSolverK::Co22TSolverK(QObject *parent): AbstaractSolver(parent)
 {
 }
 
-void Co22TSolverK::prepareSolving()
-{
-    U1.resize(solParam.NumCell+2);
-    U2.resize(solParam.NumCell+2);
-    U3.resize(solParam.NumCell+2);
-    U4.resize(solParam.NumCell+2);
-
-    leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
-    double Cv = 5.0/2 * kB/mass;
-    double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-    solParam.Gamma = gamma;
-    leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
-    leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-    leftParam.tempIntr = leftParam.temp;
-
-    rightParam = additionalSolver.BoundaryCondition[typeBC+1](leftParam, solParam);
-    rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
-//////////////////
-// rightParam.temp = 500.5;
-// rightParam.tempIntr = 500.5;
-// rightParam.pressure = 30.259216085384180;
-// rightParam.density = rightParam.pressure /(UniversalGasConstant/molMass * rightParam.temp);
-// rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
-    /////////////
-
-    double leftEvibr = additionalSolver.vibrEnergy(0,leftParam.temp);
-    double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr;
-    double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
-    double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;
-    //leftEnergy = leftFullEnergy + pow(leftParam.velocity,2)/2  + leftParam.pressure/leftParam.density;
-    //leftEnergy = rightFullEnergy + pow(rightParam.velocity,2)/2 + rightParam.pressure/rightParam.density;
-    for(auto i  = 1; i < solParam.NumCell+1; i++)
-    {
-        if(i < solParam.NumCell/2+1)
-        {
-            U1[i] = leftParam.density;
-            U2[i] = leftParam.density*leftParam.velocity;
-            U3[i] = leftParam.density*(leftFullEnergy + pow(leftParam.velocity,2)/2);
-            U4[i] = leftParam.density*leftEvibr;
-
-        }
-
-        else
-        {
-
-            U1[i] = rightParam.density;
-            U2[i] = rightParam.density*rightParam.velocity;
-            U3[i] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
-            U4[i] = rightParam.density*rightEVibr;
-        }
-    }
-    prepareVectors();
-}
-
 void Co22TSolverK::solveFlux(const Matrix& U1, const Matrix& U2, const Matrix& U3, const Matrix& U4)
 {
     calcHLLE(U1,U2,U3,U4);
     calcR(U1,U2,U3,U4);
-}
-
-void Co22TSolverK::calcRiemanPStar()
-{
-    QFutureWatcher<void> futureWatcher;
-    const std::function<void(int&)> calcPStar = [this](int& i)
-    {
-        macroParam left;
-        macroParam right;
-        mutex.lock();
-        left.density = left_density[i];
-        left.velocity = left_velocity[i];
-        left.pressure = left_pressure[i];
-        right.density = right_density[i];
-        right.velocity = right_velocity[i];
-        right.pressure = right_pressure[i];
-        mutex.unlock();
-        auto Cv = 5.0/2 * kB/mass;
-        auto Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right,Gamma);// GammaL, GammaR);
-        return;
-    };
-    futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
-    futureWatcher.waitForFinished();
 }
 
 void Co22TSolverK::solve()

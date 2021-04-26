@@ -4,41 +4,6 @@ CO2Solver::CO2Solver(QObject *parent): AbstaractSolver(parent)
 {
 }
 
-void CO2Solver::prepareSolving()
-{
-    U1.resize(solParam.NumCell+2);
-    U2.resize(solParam.NumCell+2);
-    U3.resize(solParam.NumCell+2);
-    leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
-    double Cv = 5.0/2 * kB/mass;// + CvibrMass[(leftParam.temp - CVibrStartTemp)/CVibrStepTemp];
-    double gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-    leftParam.soundSpeed = sqrt(gamma*leftParam.pressure/leftParam.density);
-    leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-
-    rightParam = additionalSolver.bondaryConditionPython(leftParam, solParam);
-    rightParam.velocity = leftParam.density*leftParam.velocity/rightParam.density;
-    double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + additionalSolver.vibrEnergy(0,leftParam.temp);
-    double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + additionalSolver.vibrEnergy(0,rightParam.temp);
-
-    for(auto i  = 1; i < solParam.NumCell+1; i++)
-    {
-        if(i < solParam.NumCell/2+1)
-        {
-            U1[i] = leftParam.density;
-            U2[i] = leftParam.density*leftParam.velocity;
-            U3[i] = leftParam.density*(leftFullEnergy + pow(leftParam.velocity,2)/2);
-        }
-
-        else
-        {
-            U1[i] = rightParam.density;
-            U2[i] = rightParam.density*rightParam.velocity;
-            U3[i] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
-        }
-    }
-    prepareVectors();
-}
-
 void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, Matrix U2R, Matrix pressureR, Matrix Tl, Matrix Tr)
 {
     left_density   = U1L;
@@ -51,36 +16,6 @@ void CO2Solver::solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix U1R, 
     this->Tr = Tr;
     calcRiemanPStar();
     calcFliux();
-}
-
-void CO2Solver::calcRiemanPStar()
-{
-    QFutureWatcher<void> futureWatcher;
-    const std::function<void(int&)> calcPStar = [this](int& i)
-    {
-        macroParam left;
-        macroParam right;
-        mutex.lock();
-        left.density = left_density[i];
-        left.velocity = left_velocity[i];
-        left.pressure = left_pressure[i];
-        right.density = right_density[i];
-        right.velocity = right_velocity[i];
-        right.pressure = right_pressure[i];
-        mutex.unlock();
-      // auto tempL = left.pressure /(UniversalGasConstant/molMass * left.density);
-      // auto tempR = right.pressure /(UniversalGasConstant/molMass * right.density);
-       mutex.lock();
-       auto CvL = 5.0/2 * kB/mass;// + additionalSolver.CVibr(tempL, additionalSolver.ZCO2Vibr(tempL));
-       auto CvR = 5.0/2 * kB/mass;// + additionalSolver.CVibr(tempR, additionalSolver.ZCO2Vibr(tempR));
-       mutex.unlock();
-       auto GammaL = (UniversalGasConstant/molMass + CvL)/CvL;
-       auto GammaR = (UniversalGasConstant/molMass + CvR)/CvR;
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolverCorrect(left,right, GammaL,GammaR);
-        return;
-    };
-    futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
-    futureWatcher.waitForFinished();
 }
 
 void CO2Solver::calcFliux()
@@ -196,12 +131,4 @@ double CO2Solver::getEnergyTemp(double energy)
         if( energy < Energy[i])
             return (i)  * energyStepTemp + energyStartTemp;
     return (Energy.size()-1) * energyStepTemp + energyStartTemp;
-}
-
-double CO2Solver::getVibrTemp(double CVibr)
-{
-    for(auto i = 0 ; i < CvibrMass.size(); i++)
-        if( CVibr < CvibrMass[i])
-            return i  * CVibrStepTemp + CVibrStartTemp;
-    return (CvibrMass.size()-1) * CVibrStepTemp + CVibrStartTemp;
 }

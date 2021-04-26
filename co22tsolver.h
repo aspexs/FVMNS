@@ -9,9 +9,7 @@ class Co22TSolver: public AbstaractSolver
 {
 public:
     Co22TSolver(QObject *parent = nullptr);
-    void prepareSolving() override;
     void solveFlux(Matrix U1L, Matrix U2L, Matrix pressureL, Matrix TvL, Matrix Tl, Matrix U1R, Matrix U2R, Matrix pressureR, Matrix TvR, Matrix Tr);
-    void calcRiemanPStar();
     void calcFliux();
 public slots:
     void solve() override;
@@ -20,7 +18,6 @@ private:
     void calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
 
     double getEnergyVibrTemp(double energy);
-    double getVibrTemp(double CVibr);
 };
 
 #endif // CO22TSOLVER_H

@@ -17,8 +17,9 @@ public:
     AbstaractSolver(QObject *parent = nullptr);
 
     virtual void solve() = 0;
-    virtual void prepareSolving()   = 0;
+    virtual void prepareSolving();
     void run() override {solve();}
+    virtual void calcRiemanPStar();
     bool breaksolve = false;
     bool pauseSolve = false;
     macroParam leftParam;
