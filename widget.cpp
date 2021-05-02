@@ -54,6 +54,7 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
          molMass = 14.0067e-3*2;
          sigma = 3.621e-10;
          epsilonDevK = 97.5;
+         mass = molMass/Nav;
          solver = new NitrogenSolver;
          ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
          ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
@@ -70,6 +71,7 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
         molMass = 44.01e-3;
         sigma = 3.763e-10;
         epsilonDevK = 244;
+        mass = 7.306e-26;
         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
         ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (old) ");
@@ -98,12 +100,12 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     }
     else if(gas.contains("O2"))
     {
-
+        mass = molMass/Nav;
         solver = new OxygenSolver;
     }
     ui->comboBox_additionalSolvingType->setCurrentIndex(0);
 
-    mass = molMass/Nav;
+    //mass = molMass/Nav;
     ui->label_sigma->setText("sigma (angstrem): " + QString::number(sigma));
     ui->label_gasMolMass->setText("Молярная масса газа: " + QString::number(molMass));
     ui->label_mass->setText("Масса молекулы газа: " + QString::number(mass));

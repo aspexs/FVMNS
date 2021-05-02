@@ -82,7 +82,7 @@ void Co22TSolverK::solve()
                   double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
                   double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
                   U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-
+Ent = U3/U1 + pres/U1;
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);

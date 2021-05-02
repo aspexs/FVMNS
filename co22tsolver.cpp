@@ -57,7 +57,7 @@ void Co22TSolver::calcFliux()
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
         Q_v[i] = qVibr;
         Q_t[i] = qTr;
-        Ent[i] = entalpi;
+        //Ent[i] = entalpi;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
@@ -156,8 +156,8 @@ void Co22TSolver::solve()
          double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
          double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
          U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-
-         Ent[Ent.size() - 1] = Ent[Ent.size() - 2];
+Ent = U3/U1 + pres/U1;
+         //Ent[Ent.size() - 1] = Ent[Ent.size() - 2];
          // Ent2[Ent2.size() - 1] = Ent2[Ent2.size() - 2];
         ////    Вариант расчета при фиксированной правой части
         ///double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
@@ -217,6 +217,6 @@ double Co22TSolver::getEnergyVibrTemp(double energy)
 {
     for(auto i = 0 ; i < EnergyVibr.size(); i++)
         if( energy < EnergyVibr[i])
-            return (i)  * energyVibrStepTemp + energyVibrStartTemp;
+            return (i-1)  * energyVibrStepTemp + energyVibrStartTemp;
     return (EnergyVibr.size()-1) * energyVibrStepTemp + energyVibrStartTemp;
 }

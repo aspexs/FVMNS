@@ -30,13 +30,12 @@ void CO2Solver::calcFliux()
         auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
-
         double etta = additionalSolver.shareViscosityOmega(leftParam.temp, Tx,0,0);
         double Cvibr = additionalSolver.CVibr(Tx, additionalSolver.ZCO2Vibr(Tx));
         double energyVibr1 = additionalSolver.vibrEnergy(0,Tx);
         double Etr_rot = 5.0/2*kB*Tx/mass;
-        double zetta = additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
-        double P =  (4.0/3*etta + zetta)*du_dx;
+        double zetta = 0;//additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
+        double P = (4.0/3*etta + zetta)*du_dx;
         double lambda = additionalSolver.lambda(Tx, Cvibr);
         double dt_dx = (tempR - tempL)/delta_h;
         double q =   -lambda*dt_dx;
@@ -45,7 +44,8 @@ void CO2Solver::calcFliux()
         F2[i] = F1[i]*point.velocity + point.pressure -P;
         F3[i] = F1[i]*entalpi - P*point.velocity + q;
         Q_t[i] = q;
-        Ent[i] = entalpi;
+       // Ent[i] = entalpi;
+        //Tv[i] = Tx;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
@@ -71,13 +71,15 @@ void CO2Solver::solve()
         double Cv = 5.0/2* kB/mass;
         T.clear();
         pres.clear();
+        Ent.clear();
         for (auto energy: energyReal)
         {
             T.push_back(getEnergyTemp(energy));
             gammas.push_back((UniversalGasConstant/molMass + Cv)/Cv);
         }
         pres = U1*T*UniversalGasConstant/molMass;
-        double dt = additionalSolver.TimeStepSolution[AdditionalSolver::TimeStepSolver::TS_FULL](velosity, U1, pres, delta_h,solParam,gammas);
+        Ent = U3/U1 + pres/U1;
+        double dt = additionalSolver.getTimeStepFull(velosity, U1, pres, delta_h,solParam,gammas);
             timeSolvind.push_back(dt+timeSolvind.last());
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
@@ -96,27 +98,32 @@ void CO2Solver::solve()
         TempR.removeFirst();
 
         solveFlux(U1L, U2L, pressureL, U1R, U2R,pressureR,Templ,TempR);
-        auto res = additionalSolver.SolveEvolutionExplFirstOrderForO2(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h);
+        auto res = additionalSolver.SEEFOForCO2(F1, F2,F3,F4,U1, U2,U3,U4,dt,delta_h,{},{},{},{},R);
         auto copyU1 = U1;
         auto copyU2 = U2;
         auto copyU3 = U3;
+        double error = res[5].first();
         U1 = res[0];
         U2 = res[1];
         U3 = res[2];
-        U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
-        U2[0]=solParam.typeLeftBorder*U2[1];
+        double leftEvibr = additionalSolver.vibrEnergy(0,leftParam.temp);
+        double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr;
+        U1[0] = leftParam.density;
+        U2[0] = leftParam.density*leftParam.velocity;
+        U3[0] = leftParam.density*(leftFullEnergy + pow(leftParam.velocity,2)/2);
+        U1[U1.size() - 1] =U1[U1.size() - 2];
         U2[U2.size()-1]= solParam.typeRightBorder*U2[U2.size()-2];
-
-        U3[0]=U3[1];
         auto T = rightParam.pressure* molMass/(UniversalGasConstant*U1.last());
         double rightEVibr2 = additionalSolver.vibrEnergy(0,T);
         double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
         U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-Ent[Ent.size()-1] = Ent[Ent.size()-2];
+//Ent[Ent.size()-1] = Ent[Ent.size()-2];
+
+        Ent = U3/U1 + pres/U1;
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);
-            emit updateTime(timeSolvind.last());
+            emit updateTime(timeSolvind.last(),error);
             QThread::msleep(200);
         }
         if(timeSolvind.last() >solParam.t_fin)
@@ -129,6 +136,6 @@ double CO2Solver::getEnergyTemp(double energy)
 {
     for(auto i = 0 ; i < Energy.size(); i++)
         if( energy < Energy[i])
-            return (i)  * energyStepTemp + energyStartTemp;
+            return (i-1)  * energyStepTemp + energyStartTemp;
     return (Energy.size()-1) * energyStepTemp + energyStartTemp;
 }

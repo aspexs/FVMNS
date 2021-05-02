@@ -894,17 +894,28 @@ double AdditionalSolver::bulcViscosityFalse(double startT, double currentT, doub
     return 0;
 }
 
-
 double AdditionalSolver::vibrEnergy(double startT, double currentT, double density, double pressure)
 {
-    double P= 0;
-    for(auto i1 = 0; i1 < 65 ; i1++)
-        for(auto i2 = 0; i2 < 36; i2++)
-            for(auto i3 = 0; i3 < 20; i3++)
+    int j1, j2, j3;
+        double D = 0;
+        for (j1 = 0; j1 < 30; j1++)
+        {
+            for (j2 = 0; j2 < 65; j2++)
             {
-                P += ((i2+1)*(i1*e100+i2*e010+i3*e001)*exp(-((2*i1+i2)*e010+i3*e001)/(kB*currentT)));
+                for (j3 = 0; j3 < 20; j3++)
+                {
+                    D += (j2 + 1.) * (j1 * e100 + j2 * e010 + j3 * e001) * exp(-(j1 * e100 + j2 * e010 + j3 * e001) / kB / currentT);
+                }
             }
-    return P/ZCO2Vibr(currentT)/mass;
+        }
+    //double P= 0;
+    //for(auto i1 = 0; i1 < 65 ; i1++)
+    //    for(auto i2 = 0; i2 < 36; i2++)
+    //        for(auto i3 = 0; i3 < 20; i3++)
+    //        {
+    //            P += ((i2+1)*(i1*e100+i2*e010+i3*e001)*exp(-((2*i1+i2)*e010+i3*e001)/(kB*currentT)));
+    //        }
+    return D/ZCO2Vibr(currentT)/mass;
 }
 
 double AdditionalSolver::fullEnergy(double startT, double currentT, double density, double pressure)
@@ -947,16 +958,33 @@ double AdditionalSolver::CVibr(double T, double ZCO2Vibr)
 
 double AdditionalSolver::ZCO2Vibr(double T)
 {
-    double sum1 = 0, sum2 = 0, sum3 = 0;
-       for(auto i1 = 0; i1 < 65; i1++)
-       {
-           sum1 += exp(-(i1*e100)/(kB*T));
-           if(i1 < 36)
-               sum2 += (i1+1)*exp(-(i1*e010)/(kB*T));
-           if(i1 < 20)
-               sum3 += exp(-(i1*e001)/(kB*T));
-       }
-       return sum1*sum2*sum3;
+    static const double De = 8.83859e-19;
+    int i1, i2, i3;
+    double S = 0;
+    for (i1 = 0; i1 < 30; i1++)
+    {
+        for (i2 = 0; i2 < 65; i2++)
+        {
+            for (i3 = 0; i3 < 20; i3++)
+            {
+                if ((i1 * e100 + i2 * e010 + i3 * e001) < De)
+                {
+                    S += (i2 + 1.) * exp(-i1 * e100 / kB / T) * exp(-i2 * e010 / kB / T) * exp(-i3 * e001 / kB / T);
+                }
+            }
+        }
+    }
+    return S;
+    //double sum1 = 0, sum2 = 0, sum3 = 0;
+    //   for(auto i1 = 0; i1 < 65; i1++)
+    //   {
+    //       sum1 += exp(-(i1*e100)/(kB*T));
+    //       if(i1 < 36)
+    //           sum2 += (i1+1)*exp(-(i1*e010)/(kB*T));
+    //       if(i1 < 20)
+    //           sum3 += exp(-(i1*e001)/(kB*T));
+    //   }
+    //   return sum1*sum2*sum3;
 }
 
 double AdditionalSolver::DZDT(double T)
@@ -1119,7 +1147,7 @@ double AdditionalSolver::getEnergyVibrTemp(double energy, QList<double> &e)
 
 macroParam AdditionalSolver::bondaryConditionPython(macroParam left, solverParams solParams)
 {
-    auto mlt =6;
+    auto mlt =8;
     macroParam right;
     while( 20 > mlt )
     {

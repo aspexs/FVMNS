@@ -7,9 +7,9 @@ const double Nav(6.02214129e23);
 const double UniversalGasConstant = 8.3144598;
 const double kB=1.38064852e-23;    // J/K
 const double kBE = 8.617e-5;       // const Bolz elVolt*K
-static const double e100=2.757e-20;//%Дж
-static const double e010=1.325e-20;//% Дж
-static const double e001=4.666e-20;//% Дж
+static const double e100 = 2.757135054E-20;
+static const double e010 = 1.32493446E-20;
+static const double e001 = 4.66607366E-20;
 
 
 static const double hPlank = 6.62559e-34;

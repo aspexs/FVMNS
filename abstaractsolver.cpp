@@ -86,9 +86,9 @@ void AbstaractSolver::prepareSolving()
 
     leftParam.density = leftParam.pressure /(UniversalGasConstant/molMass * leftParam.temp);
     double Z = additionalSolver.ZCO2Vibr(leftParam.temp);
-    double Cv = 5.0/2 * kB/mass + additionalSolver.CVibr(leftParam.temp,Z);
+    double Cv = 5.0/2 * kB/mass+ additionalSolver.CVibr(leftParam.temp,Z);
     solParam.Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
-    leftParam.soundSpeed = sqrt(solParam.Gamma *leftParam.pressure/leftParam.density);
+    leftParam.soundSpeed = sqrt(solParam.Gamma *UniversalGasConstant/molMass * leftParam.temp);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
     leftParam.tempIntr = leftParam.temp;
 
@@ -116,6 +116,9 @@ void AbstaractSolver::prepareSolving()
             U4[i] = rightParam.density*rightEVibr;
         }
     }
+    auto ent1 = leftFullEnergy + pow(leftParam.velocity,2)/2 + leftParam.pressure/leftParam.density;
+    auto ent2 = rightFullEnergy + pow(rightParam.velocity,2)/2 + rightParam.pressure/rightParam.density;
+
     prepareVectors();
 }
 
@@ -136,7 +139,7 @@ void AbstaractSolver::calcRiemanPStar()
         left.tempIntr = left_Tv[i];
         right.tempIntr = right_Tv[i];
         mutex.unlock();
-        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolver(left,right, solParam.Gamma);
+        rezultAfterPStart[i] = additionalSolver.ExacRiemanSolverCorrect(left,right, solParam.Gamma, solParam.Gamma);
         return;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcPStar));
