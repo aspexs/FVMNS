@@ -1,5 +1,4 @@
 #include "co22tsolver.h"
-
 Co22TSolver::Co22TSolver(QObject *parent): AbstaractSolver(parent)
 {
 
@@ -83,7 +82,6 @@ void Co22TSolver::solve()
         T.clear();
         Tv.clear();
         pres.clear();
-        Ent2.clear();
         Matrix gammas;
         for (auto energy: EVibr)
         {
@@ -98,11 +96,9 @@ void Co22TSolver::solve()
         }
 
         pres = U1*T*UniversalGasConstant/molMass;
-
-        //Ent2 = U3/U1;
         dt = additionalSolver.getTimeStepFull(velosity, U1, pres, delta_h,solParam,gammas);
         timeSolvind.push_back(dt+timeSolvind.last());
-        //pres = pressure;
+
         auto U1L = U1; U1L.removeLast();
         auto U2L = U2; U2L.removeLast();
         auto U3L = U3; U3L.removeLast();
@@ -136,6 +132,7 @@ void Co22TSolver::solve()
         U4 = res[3];
         R = res[4];
         error = res[5].first();
+
         ////    Вариант расчета глупый, идет простой снос значений предпоследней ячеки
         //U1[0]=U1[1];   U1[U1.size() - 1] =U1[U1.size() - 2];
         //U2[0]=solParam.typeLeftBorder*U2[1];
@@ -156,9 +153,8 @@ void Co22TSolver::solve()
          double rightEVibr2 = additionalSolver.vibrEnergy(0,Tv);
          double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
          U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
-Ent = U3/U1 + pres/U1;
-         //Ent[Ent.size() - 1] = Ent[Ent.size() - 2];
-         // Ent2[Ent2.size() - 1] = Ent2[Ent2.size() - 2];
+         Ent = U3/U1 + pres/U1;
+
         ////    Вариант расчета при фиксированной правой части
         ///double rightEVibr = additionalSolver.vibrEnergy(0,rightParam.temp);
         ///double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr;

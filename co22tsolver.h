@@ -18,6 +18,7 @@ private:
     void calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4);
 
     double getEnergyVibrTemp(double energy);
+    QVector<double> errors;
 };
 
 #endif // CO22TSOLVER_H

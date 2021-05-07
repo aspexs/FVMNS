@@ -1,6 +1,9 @@
-﻿#include "widget.h"
+#include "widget.h"
 #include "ui_widget.h"
 #include <global.h>
+#include <QLineEdit>
+#include <QDialogButtonBox>
+#include <QFormLayout>
 
 extern double sigma;
 extern double epsilonDevK;
@@ -31,6 +34,32 @@ Widget::Widget(QWidget *parent) :
 Widget::~Widget()
 {
     delete ui;
+}
+
+void Widget::continueCalc()
+{
+    pause();
+    QDialog dlg;
+    dlg.setWindowTitle(tr("Прекратить расчет"));
+    QDialogButtonBox *btn_box = new QDialogButtonBox(&dlg);
+    btn_box->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+    connect(btn_box, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btn_box, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    QFormLayout *layout = new QFormLayout();
+    layout->addRow("Ok - Закончить расчет и сделать выгрузку", new QLabel());
+    layout->addRow("Cancel - Продолжить расчет", new QLabel());
+    layout->addWidget(btn_box);
+    dlg.setLayout(layout);
+    // В случае, если пользователь нажал "Ok".
+    if(dlg.exec() == QDialog::Accepted)
+    {
+        solver->breakSolver();
+        on_pushButton_csv_clicked();
+    }
+    else
+        pause();
 }
 
 void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
@@ -82,6 +111,10 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
         ui->comboBox_additionalSolvingType->addItem("Расчет поступательной теплопроводности");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплопроводности");
         ui->comboBox_additionalSolvingType->addItem("Z_vibr");
+        ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E12");
+        ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E3");
+        ui->comboBox_additionalSolvingType->addItem("lambda12");
+        ui->comboBox_additionalSolvingType->addItem("lambda3");
         ui->comboBox_BC->addItem("Ренкина-Гюгонио");
         ui->comboBox_BC->addItem("Законы сохранения (Гир)");
         ui->comboBox_BC->setCurrentIndex(1);
@@ -95,6 +128,8 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
              solver = new Co22TSolver;
         else if(gas.contains("HLLE"))
              solver = new Co22TSolverK;
+        else if(gas.contains("3T"))
+             solver = new Co23TSolver;
         else
              solver = new CO2Solver;
     }
@@ -114,6 +149,7 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     disconnect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
     disconnect(ui->pushButton_cancel,  SIGNAL(clicked()), this, SLOT(cancal()));
     disconnect(ui->pushButton_pause, SIGNAL(clicked()), this, SLOT(pause()));
+    disconnect(solver, SIGNAL(checkCalc()), this, SLOT (continueCalc()));
 
     connect(solver, SIGNAL(updateGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updatePlot(QVector<double>, QVector<double>, double)));
     connect(solver, SIGNAL(updateAdditionalGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updateAdditionalPlot(QVector<double>, QVector<double>, double)));
@@ -122,6 +158,7 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     connect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
     connect(ui->pushButton_cancel,  SIGNAL(clicked()), this, SLOT(cancal()));
     connect(ui->pushButton_pause, SIGNAL(clicked()), this, SLOT(pause()));
+    connect(solver, SIGNAL(checkCalc()), this, SLOT (continueCalc()));
 }
 
 void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
@@ -149,7 +186,7 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
             case 2: additionalSolver->typeSolve = AdditionalSolver::BULC_VISC_SIMPLE; break;
         }
     }
-    else if(ui->comboBox_gas->currentIndex() == 2) // CO2
+    else if(ui->comboBox_gas->currentIndex() > 1 &&ui->comboBox_gas->currentIndex() < 6) // CO2
     {
         switch (index)
         {
@@ -163,6 +200,12 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
             case 7: additionalSolver->typeSolve = AdditionalSolver::LAMBDA_TR; break;
             case 8: additionalSolver->typeSolve = AdditionalSolver::LAMBDA_VIBR; break;
             case 9: additionalSolver->typeSolve = AdditionalSolver::Z_VIBR; break;
+
+            case 10: additionalSolver->typeSolve = AdditionalSolver::EVIBR12; break;
+            case 11: additionalSolver->typeSolve = AdditionalSolver::EVIBR3; break;
+            case 12: additionalSolver->typeSolve = AdditionalSolver::LAMBDA12; break;
+            case 13: additionalSolver->typeSolve = AdditionalSolver::LAMBDA3; break;
+
             default: additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_SIMPLE;
         }
     }
@@ -292,6 +335,10 @@ void Widget::on_pushButton_csv_clicked()
             nameFile = "/shareVisc.csv";
         else if (ui->comboBox_additionalSolvingType->currentText().contains("объемной"))
             nameFile = "/bulkVisc.csv";
+        else if (ui->comboBox_additionalSolvingType->currentText().contains("Расчет колебательной энергии E12"))
+            nameFile = "/vibrEnergy12.csv";
+        else if (ui->comboBox_additionalSolvingType->currentText().contains("Расчет колебательной энергии E3"))
+            nameFile = "/vibrEnergy3.csv";
         else if (ui->comboBox_additionalSolvingType->currentText().contains("колебательной энергии"))
             nameFile = "/vibrEnergy.csv";
         else if (ui->comboBox_additionalSolvingType->currentText().contains("общей энергии"))
@@ -302,7 +349,10 @@ void Widget::on_pushButton_csv_clicked()
             nameFile = "/lambdaTr.csv";
         else if (ui->comboBox_additionalSolvingType->currentText().contains("колебательной теплопроводности"))
             nameFile = "/lambdaVibr.csv";
-
+        else if (ui->comboBox_additionalSolvingType->currentText().contains("lambda12"))
+            nameFile = "/lambda12.csv";
+        else if (ui->comboBox_additionalSolvingType->currentText().contains("lambda3"))
+            nameFile = "/lambda3.csv";
         QFile file(QDir::currentPath() + nameFile);
         if(file.open(QFile::WriteOnly))
         {
@@ -315,20 +365,20 @@ void Widget::on_pushButton_csv_clicked()
     }
     else
     {
-        if(ui->comboBox_typePlot->currentIndex() == 0)
-            nameFile = "/давление.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 1)
-            nameFile = "/плотность.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 2)
-            nameFile = "/скорость.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 3)
-            nameFile = "/температура.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 4)
-            nameFile = "/Напряжение.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 5)
-            nameFile = "/q_tr_rot.csv";
-        else if(ui->comboBox_typePlot->currentIndex() == 6)
-            nameFile = "/Q_vibr.csv";
+        ///if(ui->comboBox_typePlot->currentIndex() == 0)
+        ///    nameFile = "/давление.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 1)
+        ///    nameFile = "/плотность.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 2)
+        ///    nameFile = "/скорость.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 3)
+        ///    nameFile = "/температура.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 4)
+        ///    nameFile = "/Напряжение.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 5)
+        ///    nameFile = "/q_tr_rot.csv";
+        ///else if(ui->comboBox_typePlot->currentIndex() == 6)
+        ///    nameFile = "/Q_vibr.csv";
 
         QFile file(QDir::currentPath() + "/AllParams.csv");
         if(file.open(QFile::WriteOnly))
@@ -337,12 +387,14 @@ void Widget::on_pushButton_csv_clicked()
             out  << "X"<< "Давление" << ";" << "Плотность" << ";" << "Скорость" << ";"
                 << "Температура" << ";"<< "Колеательная температура" << ";"
                 << "Тензор напряжения" << ";"<< "Постепательный тепловой поток" << ";"
-                << "Колебательный тепловой поток" << ";"<< "Энтальпия" << ";"<<"\n";
+                << "Колебательный тепловой поток (для 3Т это qVibr12)" << ";"<< "Энтальпия" << ";"
+                << "Колебательный тепловой поток qVibr3" << "Температура T12" <<"Температура T3" <<"\n";
              for(int i = 0; i <_x.size(); i ++)
              {
-                out << _x[i] << ";" << solver->pres[i] << ";" << solver->U1[i] << ";"<< solver->U2[i]/solver->U1[i] << ";"
-                    << solver->T[i] << ";"<< solver->Tv[i] << ";"<< solver->P[i] << ";"
-                    << solver->Q_t[i] << ";"<< solver->Q_v[i] << ";" <<solver->Ent[i] << ";" <<"\n";
+                out << _x[i]            << ";" << solver->pres[i]   << ";" << solver->U1[i]     << ";" << solver->U2[i]/solver->U1[i] << ";"
+                    << solver->T[i]     << ";" << solver->Tv[i]     << ";" << solver->P[i]      << ";" << solver->Q_t[i]              << ";"
+                    << solver->Q_v[i]   << ";" << solver->Ent[i]    << ";" << solver->Q_v3[i]   << ";" << solver->T12[i]              << ";"
+                    << solver->T3[i]    << "\n";
              }
              out << _time;
         }

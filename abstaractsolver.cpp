@@ -1,8 +1,10 @@
 #include "abstaractsolver.h"
+#include <QMessageBox>
 AbstaractSolver::AbstaractSolver(QObject *parent) : QThread(parent)
 {
     QFile fileCVibr(QDir::currentPath() + "\\CVibr.csv");
     QFile fileVibrEnergy(QDir::currentPath() + "\\vibrEnergy.csv");
+
     QFile fileEnergy(QDir::currentPath() + "\\allEnergy.csv");
     if( fileCVibr.open(QFile::ReadOnly) )
     {
@@ -23,7 +25,11 @@ AbstaractSolver::AbstaractSolver(QObject *parent) : QThread(parent)
     }
     else
     {
-        qDebug() << "Нет файла с CVIBR";
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Ошибка");
+        msgBox.setText("Нет файла с CVIBR");
+        msgBox.exec();
+        breaksolve = true;
     }
     if( fileVibrEnergy.open(QFile::ReadOnly) )
     {
@@ -46,8 +52,13 @@ AbstaractSolver::AbstaractSolver(QObject *parent) : QThread(parent)
     }
     else
     {
-        qDebug() << "Нет файла с VibrEnergy";
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Ошибка");
+        msgBox.setText("Нет файла с VibrEnergy");
+        msgBox.exec();
+        breaksolve = true;
     }
+
 
     if( fileEnergy.open(QFile::ReadOnly) )
     {
@@ -69,9 +80,13 @@ AbstaractSolver::AbstaractSolver(QObject *parent) : QThread(parent)
     }
     else
     {
-        qDebug() << "Нет файла с Full Energy";
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Ошибка");
+        msgBox.setText("Нет файла с Full Energy");
+        msgBox.exec();
+        breaksolve = true;
     }
-
+    fileEnergy.close();
     fileVibrEnergy.close();
     fileCVibr.close();
 }
@@ -91,7 +106,16 @@ void AbstaractSolver::prepareSolving()
     leftParam.soundSpeed = sqrt(solParam.Gamma *UniversalGasConstant/molMass * leftParam.temp);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
     leftParam.tempIntr = leftParam.temp;
-
+    QFile pythonFile(QDir::currentPath() + "\\Fun.py");
+    if( !pythonFile.open(QFile::ReadOnly) )
+    {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Ошибка");
+        msgBox.setText("Нет файла с питоновским расчетом граничных значений");
+        msgBox.exec();
+        breaksolve = true;
+        return;
+    }
     rightParam = additionalSolver.bondaryConditionPython(leftParam, solParam);
     double leftEvibr = additionalSolver.vibrEnergy(0,leftParam.temp);
     double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr;
@@ -116,9 +140,6 @@ void AbstaractSolver::prepareSolving()
             U4[i] = rightParam.density*rightEVibr;
         }
     }
-    auto ent1 = leftFullEnergy + pow(leftParam.velocity,2)/2 + leftParam.pressure/leftParam.density;
-    auto ent2 = rightFullEnergy + pow(rightParam.velocity,2)/2 + rightParam.pressure/rightParam.density;
-
     prepareVectors();
 }
 
@@ -136,8 +157,6 @@ void AbstaractSolver::calcRiemanPStar()
         right.density = right_density[i];
         right.velocity = right_velocity[i];
         right.pressure = right_pressure[i];
-        left.tempIntr = left_Tv[i];
-        right.tempIntr = right_Tv[i];
         mutex.unlock();
         rezultAfterPStart[i] = additionalSolver.ExacRiemanSolverCorrect(left,right, solParam.Gamma, solParam.Gamma);
         return;
@@ -169,10 +188,12 @@ void AbstaractSolver::prepareVectors()
     U2[0]=solParam.typeLeftBorder*U2[1];
     U3[0]=U3[1];
     U4[0]=U4[1];
+    U5[0]=U5[1];
     U1[solParam.NumCell+1]=U1[solParam.NumCell];
     U2[solParam.NumCell+1]=solParam.typeRightBorder*U2[solParam.NumCell];
     U3[solParam.NumCell+1]=U3[solParam.NumCell];
     U4[solParam.NumCell+1]=U4[solParam.NumCell];
+    U5[solParam.NumCell+1]=U5[solParam.NumCell];
 
     timeSolvind.push_back(0);
     for(int i = 0 ; i<  solParam.NumCell+1; i++)
@@ -181,12 +202,18 @@ void AbstaractSolver::prepareVectors()
     F2.resize(solParam.NumCell+1);
     F3.resize(solParam.NumCell+1);
     F4.resize(solParam.NumCell+1);
+    F5.resize(solParam.NumCell+1);
     P.resize(solParam.NumCell+2);
     Q_v.resize(solParam.NumCell+2);
+    Q_v3.resize(solParam.NumCell+2);
     Q_t.resize(solParam.NumCell+2);
     R.resize(solParam.NumCell+1);
+    R_1.resize(solParam.NumCell+1);
+    R_2.resize(solParam.NumCell+1);
     T.resize(solParam.NumCell +2);
     Tv.resize(solParam.NumCell +2);
+    T12.resize(solParam.NumCell +2);
+    T3.resize(solParam.NumCell +2);
     Ent.resize(solParam.NumCell +2);
     Ent2.resize(solParam.NumCell +2);
     rezultAfterPStart.resize(solParam.NumCell+1);
@@ -204,8 +231,9 @@ void AbstaractSolver::setTypePlot(int i)
     case 3: values = T; additionalValues = Tv; break;
     case 4: values = P;break;
     case 5:values = Q_t;break;
-    case 6:values = Q_v;break;
+    case 6:values = Q_v; additionalValues = Q_v3; break;
     case 7: values= Ent; additionalValues = Ent2; break;
+    case 8: values = T12; additionalValues = T3; break;
     default: values = U1; break;
     }
     emit updateGraph(x, values, solParam.lambda);

@@ -24,6 +24,10 @@ public:
         LAMBDA_TR,
         LAMBDA_VIBR,
         Z_VIBR,
+        EVIBR12,
+        EVIBR3,
+        LAMBDA12,
+        LAMBDA3,
         FUNCTION_COUNT
     };
     enum BoundaryConditions
@@ -84,12 +88,18 @@ public:
     QVector<QVector<double>> SEEFOForCO2(Matrix F1,   Matrix F2,    Matrix F3, Matrix F4, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old,
                                                                  double dt, double delta_h, Matrix F11, Matrix F22, Matrix F33, Matrix F44, Matrix R);
      QVector<Matrix> SolveMUSCL_UL_UR(Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double Gamma, double dt_dx,QVector<double>EnergyVibr, double energyStepTemp, double energyStartTemp,int LimType = 1, double omega = 0);
+
+     QVector<QVector<double>> SEEFOForCO23T(Matrix F1,      Matrix F2,      Matrix F3,      Matrix F4,      Matrix F5,
+                                            Matrix U1old,   Matrix U2old,   Matrix U3old,   Matrix U4old,   Matrix U5old,
+                                            double dt, double delta_h, Matrix R_1, Matrix R_2);
+
 signals:
     void completeSolution();
 public:
     QMutex mutex;
-    double (*func[FUNCTION_COUNT]) (double t1, double t2, double t3, double t4) = {shareViscositySuperSimple, shareViscositySimple, shareViscosityOmega,
-                                                                                    bulcViscositySimple,bulcViscosityOld, bulcViscosityNew, vibrEnergy, fullEnergy, CVibrFunction, lambdaTr, lambdaVibr, zVibr};
+    double (*func[FUNCTION_COUNT]) (double t1, double t2, double t3, double t4) = {shareViscositySuperSimple, shareViscositySimple, shareViscosityOmega, bulcViscositySimple,
+                                                                                    bulcViscosityOld, bulcViscosityNew, vibrEnergy, fullEnergy, CVibrFunction, lambdaTr,
+                                                                                    lambdaVibr, zVibr, EVibr12, EVibr3, Lambda12, Lambda3};
     static double shareViscositySuperSimple (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscositySimple      (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscosityOmega       (double startT, double currentT, double density = 0, double pressure = 0);
@@ -141,6 +151,16 @@ public:
                      Matrix& F11, Matrix& F22, Matrix& F33, Matrix& F44,Matrix& R,
                      QList<double>& EnergyVibr);
     double getEnergyVibrTemp(double energy, QList<double>& e);
+
+    static double EVibr12(double ST, double T = 0, double r = 0, double t = 0);
+    static double EVibr3(double sT, double T = 0, double r = 0, double t = 0);
+    static double Lambda12(double ST, double T = 0, double r = 0, double t = 0);
+    static double Lambda3(double sT, double T = 0, double r = 0, double t = 0);
+    static double CVibr12(double T);
+    static double CVibr3(double T);
+    static double ZCO2Vibr12(double T);
+    static double ZCO2Vibr3(double T);
+    static double tauVibrVVLosev(double t, double P);
 };
 
 #endif // ABSTRACTADDITIONALSOLVER_H

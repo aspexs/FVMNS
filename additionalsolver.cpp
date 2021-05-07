@@ -415,14 +415,13 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                 ret.density  = left.density;
                 ret.velocity = left.velocity;
                 ret.pressure = left.pressure;
-                ret.tempIntr = left.tempIntr;
             }
             else  //% the u is behind the shock
             {
                 ret.density  = left_star_density;
                 ret.velocity = star_speed;
                 ret.pressure = p_star;
-                ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
+
             }
         }
         else // % the left wave is a rarefaction
@@ -432,7 +431,7 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                 ret.density  = left.density;
                 ret.velocity = left.velocity;
                 ret.pressure = left.pressure;
-                ret.tempIntr = left.tempIntr;
+
             }
             else
             {
@@ -442,14 +441,13 @@ macroParam AdditionalSolver::ExacRiemanSolverCorrect(macroParam left, macroParam
                     ret.density = left.density *  pow(temp1, 2.0/( GammaL-1.0 ));
                     ret.pressure = left.pressure * pow(temp1, 2.0*GammaL/ ( GammaL-1.0));
                     ret.velocity = 2.0/ ( GammaL+1.0 ) * ( left_soundspeed + ( GammaL-1.0 ) /2.0*left.velocity + lambda);
-                    ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
                 }
                 else//  % the u is after the rarefaction
                 {
                     ret.density  = left_star_density;
                     ret.velocity = star_speed;
                     ret.pressure = p_star;
-                    ret.tempIntr = left.tempIntr + (right.tempIntr - left.tempIntr)/5;
+
                 }
             }
         }
@@ -749,6 +747,37 @@ QVector<Matrix> AdditionalSolver::SolveMUSCL_UL_UR(Matrix U1old, Matrix U2old, M
 
 }
 
+QVector<QVector<double> > AdditionalSolver::SEEFOForCO23T(Matrix F1, Matrix F2, Matrix F3, Matrix F4, Matrix F5, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, Matrix U5old, double dt, double delta_h, Matrix R_1, Matrix R_2)
+{
+    int len = F1.size();
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1), U5new(len + 1);
+    const auto temp = dt/delta_h;
+    const auto temp2 = pow(temp,2);
+    const auto temp3 = dt/delta_h/delta_h;
+    double sumDeltaF1 = 0, sumDeltaF2 = 0, sumDeltaF3 = 0, sumDeltaF4 = 0, sumDeltaF5 = 0;
+    for(int i = 1 ; i < len; i++)
+    {
+        const auto deltaF1 = temp*(F1[i]  - F1[i-1]);
+        const auto deltaF2 = temp*(F2[i]  - F2[i-1]);
+        const auto deltaF3 = temp*(F3[i]  - F3[i-1]);
+        const auto deltaF4 = temp*(F4[i]  - F4[i-1]);
+        const auto deltaF5 = temp*(F5[i]  - F5[i-1]);
+        sumDeltaF1 += deltaF1;
+        sumDeltaF2 += deltaF2;
+        sumDeltaF3 += deltaF3;
+        sumDeltaF4 += deltaF4;
+        sumDeltaF5 += deltaF5;
+
+        U1new[i] =  U1old[i] - deltaF1;
+        U2new[i] =  U2old[i] - deltaF2;
+        U3new[i] =  U3old[i] - deltaF3;
+        U4new[i] =  U4old[i] - deltaF4 + dt*R_1[i];
+        U5new[i] =  U5old[i] - deltaF5 + dt*R_2[i];
+
+    }
+    return {U1new, U2new, U3new, U4new, U5new, {sumDeltaF1+sumDeltaF2+sumDeltaF3+sumDeltaF4}};
+}
+
 
 void AdditionalSolver::MackCormack(Matrix U1, Matrix U2, Matrix U3, Matrix U4,
                                    Matrix& F1, Matrix& F2, Matrix& F3, Matrix& F4,
@@ -914,7 +943,7 @@ double AdditionalSolver::vibrEnergy(double startT, double currentT, double densi
     //        for(auto i3 = 0; i3 < 20; i3++)
     //        {
     //            P += ((i2+1)*(i1*e100+i2*e010+i3*e001)*exp(-((2*i1+i2)*e010+i3*e001)/(kB*currentT)));
-    //        }
+    //
     return D/ZCO2Vibr(currentT)/mass;
 }
 
@@ -961,9 +990,9 @@ double AdditionalSolver::ZCO2Vibr(double T)
     static const double De = 8.83859e-19;
     int i1, i2, i3;
     double S = 0;
-    for (i1 = 0; i1 < 30; i1++)
+    for (i1 = 0; i1 < 34; i1++)
     {
-        for (i2 = 0; i2 < 65; i2++)
+        for (i2 = 0; i2 < 67; i2++)
         {
             for (i3 = 0; i3 < 20; i3++)
             {
@@ -1027,17 +1056,12 @@ double AdditionalSolver::TauRot(double T, double P)
 
 double AdditionalSolver::TauVibr(double T, double P)
 {
-    //P = P/101325;
+    P = P/101325;
     double a=-18.19;
     double b=40.47;
     double c=0;
     double d=0.00423;
-    //auto e = a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3));
-    //auto e2 = a+b*pow(T,1.0/3)+c*pow(T,2.0/3)+d/(pow(T,1.0/3));
-    //auto r = exp(e);
-    //auto r2 = exp(e2);
-    //return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/P;
-    return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))*101325/P;
+    return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/P;
 }
 
 double AdditionalSolver::lambda(double T, double CVibr)
@@ -1143,6 +1167,173 @@ double AdditionalSolver::getEnergyVibrTemp(double energy, QList<double> &e)
         if( energy < e[i])
             return i  * 1 + 100-1;
     return (e.size()-1) * 1 + 100 - 1;
+}
+double E_CO2(int v1, int v2, int v3)
+{
+    double d[3] = { 1., 2., 1. };
+    //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0) + ox[0] * (v1 + d[0] / 2.0) * (v1 + d[0] / 2.0) + ox[1] * (v1 + d[0] / 2.0) * (v2 + d[1] / 2.0) + ox[2] * (v1 + d[0] / 2.0) * (v3 + d[2] / 2.0) + ox[3] * (v2 + d[1] / 2.0) * (v2 + d[1] / 2.0) + ox[4] * (v2 + d[1] / 2.0) * (v3 + d[2] / 2.0) + ox[5] * (v3 + d[2] / 2.0) * (v3 + d[2] / 2.0));
+    //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0)); //harmonic
+    double ECO2 = v1 * e100 + v2 * e010 + v3 * e001;
+    //return En_CO2_0[v1][v2]/1.e20;
+    return ECO2;
+}
+double AdditionalSolver::EVibr12(double sT, double T, double r, double t)
+{
+    int L1 = 34;
+    int L2 = 67;
+    int L3 = 20;
+    double E = 0, D = 0;
+
+    for (int i1 = 0; i1 <= L1; i1++)
+    {
+        for (int i2 = 0; i2 <= L2; i2++)
+        {
+            double e = (i2 + 1.) * (i1 * e100 + i2 * e010)              * exp(-(i1 * e100 + i2 * e010 )             / kB / T);
+            //for (int i3 = 0; i3 <= L3; i3++)
+            //{
+            //    if ((E_CO2(i1, i2, i3) < De))
+            //    {
+            //
+            //        double r = (i2 + 1.) * (E_CO2(i1, 0, 0) + E_CO2(0, i2, 0))  * exp(-(E_CO2(i1, i2, 0) - E_CO2(0, 0, 0))  / kB / T);
+            //
+            //        E += r;
+            //    }
+            //}
+            D += e;
+        }
+    }
+    double ee = ZCO2Vibr12(T);
+    double w = D/ee/mass ;
+    return w;
+}
+
+double AdditionalSolver::EVibr3(double sT, double T, double r, double t)
+{
+    int L3 = 20;
+    double E = 0, D = 0;
+
+    for (int i3 = 0; i3 <= L3; i3++)
+    {
+        if ((E_CO2(0, 0, i3) < De))
+        {
+            D += (i3 * e001) * exp(-(i3 * e001) / kB / T);
+            //E += E_CO2(0, 0, i3) * exp(-(E_CO2(0, 0, i3) - E_CO2(0, 0, 0)) / (kB * T));
+        }
+    }
+
+    return D/ZCO2Vibr3(T)/massaCO2;
+}
+
+double AdditionalSolver::Lambda12(double sT, double T, double r, double t)
+{
+    double cVibr = CVibr12(T);
+    return (3.0*kB*T)/(8.0*getOmega11(T))*cVibr;
+}
+
+double AdditionalSolver::Lambda3(double sT, double T, double r, double t)
+{
+    double cVibr = CVibr3(T);
+    return (3.0*kB*T)/(8.0*getOmega11(T))*cVibr;
+}
+
+double AdditionalSolver::CVibr12(double T)
+{
+    double Z12 = ZCO2Vibr12(T);
+    long double S = 0;
+    long double F = 0;
+    int i1, i2;
+    for (i1 = 0; i1 < 20; i1++)
+    {
+        for (i2 = 0; i2 < 40; i2++)
+        {
+            if (E_CO2(i1, i2, 0) < De)
+            {
+
+                S += (i2 + 1.) * (E_CO2(i1, 0, 0) - E_CO2(0, 0, 0) + E_CO2(0, i2, 0) - E_CO2(0, 0, 0)) * (E_CO2(i1, 0, 0) - E_CO2(0, 0, 0) + E_CO2(0, i2, 0) - E_CO2(0, 0, 0)) * exp(-(E_CO2(i1, 0, 0) - E_CO2(0, 0, 0) + E_CO2(0, i2, 0) - E_CO2(0, 0, 0)) / (kB * T)) / (kB * pow(T, 2));  // (pow(kb * T12, 2));
+                //S += (i2 + 1.) * (i1 * e100 + i2 * e010) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010) / (kb * T12)) / (kb * pow(T12, 2));
+                F += (i2 + 1.) * (E_CO2(i1, 0, 0) - E_CO2(0, 0, 0) + E_CO2(0, i2, 0) - E_CO2(0, 0, 0)) * exp(-(E_CO2(i1, 0, 0) - E_CO2(0, 0, 0) + E_CO2(0, i2, 0) - E_CO2(0, 0, 0)) / (kB * T)) / (sqrt(kB) * T);
+                //F += (i2 + 1.) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010) / (kb * T12)) / (sqrt(kb) * T12);
+            }
+        }
+    }
+    return  (S / Z12 - pow(F / Z12, 2)) / massaCO2;
+}
+
+double AdditionalSolver::CVibr3(double T)
+{
+    int L3 = 10;
+    double Z3 = ZCO2Vibr3(T);
+    long double S = 0;
+
+    for (int i3 = 0; i3 < L3; i3++)
+        if (E_CO2(0, 0, i3) < De)
+            S += (i3 * e001) * (i3 * e001) * exp(-(i3 * e001) / (kB * T)) / (kB * pow(T, 2));
+    long double F = 0;
+    for (int i3 = 0; i3 <= L3; i3++)
+        if (E_CO2(0, 0, i3) < De)
+        {
+            F += (i3 * e001) * exp(-(i3 * e001) / (kB * T)) / (sqrt(kB) * T);
+            // F += (i3 * e001) * exp(-(i3 * e001) / (kb * T3)) ;
+        }
+    return  (S / Z3 - pow(F / Z3, 2)) / massaCO2;
+}
+
+double AdditionalSolver::ZCO2Vibr12(double T)
+{
+    int L1 = 20;//34;
+    int L2 = 40;// 67;
+    //int L3 = 1;//20;
+    long double Z_vibr_12 = 0;
+
+    for (int i1 = 0; i1 < L1; i1++)
+    {
+        for (int i2 = 0; i2 < L2; i2++)
+        {
+            //for (int i3 = 0; i3 < L3; i3++) // у Алёны нет этого суммирования
+            //{
+                if (E_CO2(i1, i2, 0) < De)
+                {
+                    //Z_vibr_12 += (i2 + 1.) * exp(-(E_CO2(i1, i2, i3) - E_CO2(0, 0, 0)) / (kB * T));
+                    Z_vibr_12 += (i2 + 1.) * exp(-(i1 * e100 + i2 * e010) / (kB * T));
+                    // += (i2 + 1.) * exp(-i1 * e100 / kB / T) * exp(-i2 * e010 / kB / T);
+                }
+
+            //}
+        }
+    }
+    return Z_vibr_12;
+}
+
+double AdditionalSolver::ZCO2Vibr3(double T)
+{
+    int L3 = 20;
+    long double Z_vibr_3 = 0;
+
+
+    for (int i3 = 0; i3 < L3; i3++)
+    {
+        if (E_CO2(0, 0, i3) < De)
+        {
+            //Z_vibr_3 += exp(-(E_CO2(0, 0, i3) - E_CO2(0, 0, 0)) / (kB * T));
+            Z_vibr_3 += exp(-(i3 * e001) / (kB * T));
+        }
+    }
+
+    return Z_vibr_3;
+}
+
+double AdditionalSolver::tauVibrVVLosev(double T, double P)
+{
+    P = P/101325;
+    double P_tau;
+    double a = -26.85;
+    double b = 173.22;
+    double c = -539.74;
+    double d = 0.09645;
+    double T13 = pow(T, -1. / 3.);
+    double ptau = a + b * pow(T13, 1.) + c * pow(T13, 2.) + d / T13;
+    P_tau = exp(ptau); //[atm*s] if pow(10, lgpt)*P1 [Pa*s]
+    return (P_tau / P);
 }
 
 macroParam AdditionalSolver::bondaryConditionPython(macroParam left, solverParams solParams)

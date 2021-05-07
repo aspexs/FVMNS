@@ -33,6 +33,7 @@ SOURCES += \
         chart.cpp \
         co22tsolver.cpp \
         co22tsolverK.cpp \
+        co23tsolver.cpp \
         co2solver.cpp \
         global.cpp \
         main.cpp \
@@ -49,6 +50,7 @@ HEADERS += \
         chart.h \
         co22tsolver.h \
         co22tsolverK.h \
+        co23tsolver.h \
         co2solver.h \
         global.h \
         nitrogensolver.h \

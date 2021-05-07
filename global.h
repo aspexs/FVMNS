@@ -10,7 +10,7 @@ const double kBE = 8.617e-5;       // const Bolz elVolt*K
 static const double e100 = 2.757135054E-20;
 static const double e010 = 1.32493446E-20;
 static const double e001 = 4.66607366E-20;
-
+static const double De = 8.83859e-19;
 
 static const double hPlank = 6.62559e-34;
 static const double clight = 2.99792458e8;

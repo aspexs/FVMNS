@@ -33,14 +33,14 @@ public:
     AdditionalSolver additionalSolver;
     additionalSolverForCO2 additionalSolverCo2;
 
-    QVector<double> R, P, Q_v, Q_t, T, Tv, Ent, Ent2;
-    Matrix U1, U2, U3, U4, pres;
+    Matrix R, P, Q_v, Q_t, T, Tv, Ent, Ent2, R_1, R_2, T12, T3, Q_v3;
+    Matrix U1, U2, U3, U4,U5, pres;
 public slots:
     void pause();
     void breakSolver();
     void setTypePlot(int i);
 protected:
-    Matrix F1, F2, F3, F4;
+    Matrix F1, F2, F3, F4, F5;
     QVector <double> x;
     QVector<int> vectorForParallelSolving;
     double delta_h;
@@ -52,9 +52,9 @@ protected:
     Matrix right_velocity;
     Matrix left_pressure;
     Matrix right_pressure;
-    Matrix left_Tv;
-    Matrix right_Tv;
+    Matrix left_Tv, right_Tv;
     Matrix Tl,Tr;
+    Matrix T12L,T12R, T3L, T3R;
     QVector<macroParam> rezultAfterPStart;
     QMutex mutex;
     QList<double> CvibrMass;
@@ -63,6 +63,12 @@ protected:
     QVector<double> EnergyVibr;
     double energyVibrStartTemp;
     double energyVibrStepTemp;
+    QVector<double> EnergyVibr12;
+    double energyVibrStartTemp12;
+    double energyVibrStepTemp12;
+    QVector<double> EnergyVibr3;
+    double energyVibrStartTemp3;
+    double energyVibrStepTemp3;
 
     QVector<double> Energy;
     double energyStartTemp;
@@ -76,6 +82,7 @@ signals:
    void updateAdditionalGraph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateAdditional2Graph(QVector<double> x, QVector<double> y, double lambda = 1);
    void updateTime(double time, double error = 0);
+   void checkCalc();
 };
 
 #endif // ABSTARACTSOLVER_H

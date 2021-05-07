@@ -368,12 +368,17 @@
      </item>
      <item>
       <property name="text">
-       <string>q_vibr</string>
+       <string>q_vibr( или q12 и q3)</string>
       </property>
      </item>
      <item>
       <property name="text">
        <string>Энтальпия</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>T12-T3</string>
       </property>
      </item>
     </widget>
@@ -424,6 +429,11 @@
      <item>
       <property name="text">
        <string>Углекислый газ - CO2 2T(HLLE)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Углекислый газ - CO2 3T</string>
       </property>
      </item>
      <item>

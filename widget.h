@@ -8,6 +8,7 @@
 #include "co2solver.h"
 #include "co22tsolver.h"
 #include "co22tsolverK.h"
+#include "co23tsolver.h"
 #include <additionalsolver.h>
 #include <chart.h>
 #include <QChartView>
@@ -23,6 +24,8 @@ class Widget : public QWidget
 public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
+public slots:
+    void continueCalc();
 
 private slots:
     void on_comboBox_gas_currentIndexChanged(const QString &gas_);
