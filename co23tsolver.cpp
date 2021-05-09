@@ -156,8 +156,8 @@ void Co23TSolver::calcFliux()
         double dt_dx = (tempR - tempL)/delta_h;
         double dt12_dx = (tempRT12 - tempLT12)/delta_h;
         double dt3_dx = (tempRT3 - tempLT3)/delta_h;
-        double qVibr12 = -additionalSolver.Lambda12(0,T12)* dt12_dx;
-        double qVibr3 = -additionalSolver.Lambda3(0,T3)* dt3_dx;
+        double qVibr12 = -additionalSolver.Lambda12(Tx,T12)* dt12_dx;
+        double qVibr3 = -additionalSolver.Lambda3(Tx,T3)* dt3_dx;
         double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double entalpi = Etr_rot + energyVibr12 + energyVibr3 + point.pressure/point.density + pow(point.velocity,2)/2;
@@ -167,10 +167,12 @@ void Co23TSolver::calcFliux()
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr12 + qVibr3 + qTr;
         F4[i] = point.density * point.velocity*energyVibr12 + qVibr12;
         F5[i] = point.density * point.velocity*energyVibr3 + qVibr3;
+        mutex.lock();
         Q_v[i] = qVibr12;
         Q_t[i] = qTr;
         Q_v3[i] = qVibr3;
         this->P[i] = P;
+         mutex.unlock();
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -347,12 +349,16 @@ void Co23TSolver::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, co
         double tauVibr = additionalSolver.TauVibr(T[i],pressure[i]);
         double tauVibr3 = additionalSolver.tauVibrVVLosev(T[i],pressure[i]);
         auto deltaE = (additionalSolver.EVibr12(0,T[i]) - additionalSolver.EVibr12(0,T122[i]));
-        double r1 =tempU1[i] * (deltaE/tauVibr + deltaE/ tauVibr3);// + deltaE/ tauVibr3 );
-        R_1[i]=r1;
+        double r1 =tempU1[i] *(deltaE/tauVibr + deltaE/ tauVibr3);// + deltaE/ tauVibr );
+
         auto deltaE2 = (additionalSolver.EVibr3(0,T[i]) - additionalSolver.EVibr3(0,T3[i]));
         double r2 =tempU1[i]* (deltaE2/tauVibr3);// + deltaE2/tauVibr3);
+        mutex.lock();
+        R_1[i]=r1;
         R_2[i]=r2;
+        mutex.unlock();
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calc));
     futureWatcher.waitForFinished();
 }
+

@@ -901,9 +901,22 @@ double AdditionalSolver::bulcViscosityOld(double startT, double currentT, double
     return (kB*currentT/Betta(currentT, cVibr))*pow((Crot() + cVibr)/(Crot() + Ctr() + cVibr),2);
 }
 
-double AdditionalSolver::bulcViscosityOld2(double CVibr, double currentT, double density, double pressure)
+double AdditionalSolver::bulcViscosityOld2(double CVibr, double T, double density, double pressure)
 {
-    return (kB*currentT/Betta(currentT, CVibr))*pow((Crot() + CVibr)/(Crot() + Ctr() + CVibr),2);
+    double Cv = CVibr +  Crot() + Ctr();
+    double F = 1+ pow(M_PI,3.0/2)/2*pow((T/epsilonDevK),-1.0/2) + (pow(M_PI,2)/4 +2)*pow(T/epsilonDevK,-1) + pow(M_PI,3.0/2)* pow(T/epsilonDevK,-3.0/2);
+    double ZettaRot = ZettaInf/F;
+    auto visc = shareViscosityOmega(0,T);
+    double trot = ZettaRot*M_PI*visc/4;
+
+    double a=-18.19;
+    double b=40.47;
+    double c=0;
+    double d=0.00423;
+    double tvibr = exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/pressure*101325;
+    double CIntDevTauInt = Crot()/trot + CVibr/tvibr;
+    double Betta =  (3.0*CIntDevTauInt)/(2.0 * Cv)* mass *UniversalGasConstant/molMass *T;
+    return (kB*T/Betta)*pow((Crot() + CVibr)/(Crot() + Ctr() + CVibr),2);
 }
 
 double AdditionalSolver::bulcViscosityNew(double startT, double currentT, double density, double pressure)
@@ -1172,8 +1185,8 @@ double E_CO2(int v1, int v2, int v3)
 {
     double d[3] = { 1., 2., 1. };
     //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0) + ox[0] * (v1 + d[0] / 2.0) * (v1 + d[0] / 2.0) + ox[1] * (v1 + d[0] / 2.0) * (v2 + d[1] / 2.0) + ox[2] * (v1 + d[0] / 2.0) * (v3 + d[2] / 2.0) + ox[3] * (v2 + d[1] / 2.0) * (v2 + d[1] / 2.0) + ox[4] * (v2 + d[1] / 2.0) * (v3 + d[2] / 2.0) + ox[5] * (v3 + d[2] / 2.0) * (v3 + d[2] / 2.0));
-    //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0)); //harmonic
-    double ECO2 = v1 * e100 + v2 * e010 + v3 * e001;
+    double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0)); //harmonic
+    //double ECO2 = v1 * e100 + v2 * e010 + v3 * e001;
     //return En_CO2_0[v1][v2]/1.e20;
     return ECO2;
 }
@@ -1188,7 +1201,7 @@ double AdditionalSolver::EVibr12(double sT, double T, double r, double t)
     {
         for (int i2 = 0; i2 <= L2; i2++)
         {
-            double e = (i2 + 1.) * (i1 * e100 + i2 * e010)              * exp(-(i1 * e100 + i2 * e010 )             / kB / T);
+            double e = (i2 + 1.) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010 )             / kB / T);
             //for (int i3 = 0; i3 <= L3; i3++)
             //{
             //    if ((E_CO2(i1, i2, i3) < De))
@@ -1227,13 +1240,15 @@ double AdditionalSolver::EVibr3(double sT, double T, double r, double t)
 double AdditionalSolver::Lambda12(double sT, double T, double r, double t)
 {
     double cVibr = CVibr12(T);
-    return (3.0*kB*T)/(8.0*getOmega11(T))*cVibr;
+    return (3.0*kB*T)/(8.0*getOmega11(sT))*cVibr;
+    //return TauVibr(T,1000);
 }
 
 double AdditionalSolver::Lambda3(double sT, double T, double r, double t)
 {
     double cVibr = CVibr3(T);
-    return (3.0*kB*T)/(8.0*getOmega11(T))*cVibr;
+    return (3.0*kB*T)/(8.0*getOmega11(sT))*cVibr;
+    //return tauVibrVVLosev(T,1000);
 }
 
 double AdditionalSolver::CVibr12(double T)
@@ -1280,8 +1295,8 @@ double AdditionalSolver::CVibr3(double T)
 
 double AdditionalSolver::ZCO2Vibr12(double T)
 {
-    int L1 = 20;//34;
-    int L2 = 40;// 67;
+    int L1 = 34;//20;//34;
+    int L2 = 67;//40;// 67;
     //int L3 = 1;//20;
     long double Z_vibr_12 = 0;
 

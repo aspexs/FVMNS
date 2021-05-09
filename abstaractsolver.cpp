@@ -216,6 +216,7 @@ void AbstaractSolver::prepareVectors()
     T3.resize(solParam.NumCell +2);
     Ent.resize(solParam.NumCell +2);
     Ent2.resize(solParam.NumCell +2);
+    B_v.resize(solParam.NumCell +2);
     rezultAfterPStart.resize(solParam.NumCell+1);
 }
 void AbstaractSolver::setTypePlot(int i)
@@ -234,6 +235,7 @@ void AbstaractSolver::setTypePlot(int i)
     case 6:values = Q_v; additionalValues = Q_v3; break;
     case 7: values= Ent; additionalValues = Ent2; break;
     case 8: values = T12; additionalValues = T3; break;
+    case 9: values = B_v; break;
     default: values = U1; break;
     }
     emit updateGraph(x, values, solParam.lambda);

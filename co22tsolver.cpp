@@ -56,7 +56,6 @@ void Co22TSolver::calcFliux()
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
         Q_v[i] = qVibr;
         Q_t[i] = qTr;
-        //Ent[i] = entalpi;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
