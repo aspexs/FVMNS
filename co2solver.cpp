@@ -34,7 +34,7 @@ void CO2Solver::calcFliux()
         double Cvibr = additionalSolver.CVibr(Tx, additionalSolver.ZCO2Vibr(Tx));
         double energyVibr1 = additionalSolver.vibrEnergy(0,Tx);
         double Etr_rot = 5.0/2*kB*Tx/mass;
-        double zetta = additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
+        double zetta = 0;//additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
         double P = (4.0/3*etta + zetta)*du_dx;
         double lambda = additionalSolver.lambda(Tx, Cvibr);
         double dt_dx = (tempR - tempL)/delta_h;

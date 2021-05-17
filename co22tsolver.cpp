@@ -40,7 +40,7 @@ void Co22TSolver::calcFliux()
         mutex.unlock();
 
         double etta = additionalSolver.shareViscosityOmega(0,Tx);
-        double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
+        double zetta =0;//additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
 
         double P = (4.0/3*etta + zetta)*du_dx;
         double dt_dx = (tempR - tempL)/delta_h;
@@ -56,6 +56,7 @@ void Co22TSolver::calcFliux()
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
         Q_v[i] = qVibr;
         Q_t[i] = qTr;
+        B_v[i] = zetta;
         this->P[i] = P;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));

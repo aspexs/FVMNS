@@ -380,7 +380,7 @@ void Widget::on_pushButton_csv_clicked()
         ///else if(ui->comboBox_typePlot->currentIndex() == 6)
         ///    nameFile = "/Q_vibr.csv";
 
-        QFile file(QDir::currentPath() + "/AllParams.csv");
+        QFile file(QDir::currentPath() + "/AllParams_" + QString::number(ui->doubleSpinBox_ma->value()) + "_"+ ui->comboBox_gas->currentText() + ".csv");
         if(file.open(QFile::WriteOnly))
         {
             QTextStream out(&file);
@@ -388,13 +388,13 @@ void Widget::on_pushButton_csv_clicked()
                 << "Температура" << ";"<< "Колеательная температура" << ";"
                 << "Тензор напряжения" << ";"<< "Постепательный тепловой поток" << ";"
                 << "Колебательный тепловой поток (для 3Т это qVibr12)" << ";"<< "Энтальпия" << ";"
-                << "Колебательный тепловой поток qVibr3" <<";"<< "Температура T12" <<";"<<"Температура T3" <<";"<<"Объемная вязкость" << "\n";
+                << "Колебательный тепловой поток qVibr3" << "Температура T12" <<"Температура T3" <<"\n";
              for(int i = 0; i <_x.size(); i ++)
              {
                 out << _x[i]            << ";" << solver->pres[i]   << ";" << solver->U1[i]     << ";" << solver->U2[i]/solver->U1[i] << ";"
                     << solver->T[i]     << ";" << solver->Tv[i]     << ";" << solver->P[i]      << ";" << solver->Q_t[i]              << ";"
                     << solver->Q_v[i]   << ";" << solver->Ent[i]    << ";" << solver->Q_v3[i]   << ";" << solver->T12[i]              << ";"
-                    << solver->T3[i]    << ";" << solver-> B_v[i]    << "\n";
+                    << solver->T3[i]    << "\n";
              }
              out << _time;
         }

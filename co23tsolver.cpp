@@ -65,6 +65,9 @@ Co23TSolver::Co23TSolver(QObject *parent) : AbstaractSolver(parent)
 
 void Co23TSolver::prepareSolving()
 {
+
+
+
     U1.resize(solParam.NumCell+2);
     U2.resize(solParam.NumCell+2);
     U3.resize(solParam.NumCell+2);
