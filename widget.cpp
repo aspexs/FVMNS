@@ -115,6 +115,9 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E3");
         ui->comboBox_additionalSolvingType->addItem("lambda12");
         ui->comboBox_additionalSolvingType->addItem("lambda3");
+         ui->comboBox_additionalSolvingType->addItem("C_Tr");
+          ui->comboBox_additionalSolvingType->addItem("C_Rot");
+
         ui->comboBox_BC->addItem("Ренкина-Гюгонио");
         ui->comboBox_BC->addItem("Законы сохранения (Гир)");
         ui->comboBox_BC->setCurrentIndex(1);
@@ -205,6 +208,8 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
             case 11: additionalSolver->typeSolve = AdditionalSolver::EVIBR3; break;
             case 12: additionalSolver->typeSolve = AdditionalSolver::LAMBDA12; break;
             case 13: additionalSolver->typeSolve = AdditionalSolver::LAMBDA3; break;
+            case 14: additionalSolver->typeSolve = AdditionalSolver::C_TR; break;
+            case 15: additionalSolver->typeSolve = AdditionalSolver::C_ROT; break;
 
             default: additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_SIMPLE;
         }

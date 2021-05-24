@@ -975,12 +975,12 @@ double AdditionalSolver::CVibrFunction(double startT, double currentT, double de
     return CVibr(currentT,ZCO2Vibr(currentT));
 }
 
-double AdditionalSolver::Crot()
+double AdditionalSolver::Crot(double startT, double currentT, double density, double pressure )
 {
     return kB/mass;
 }
 
-double AdditionalSolver::Ctr()
+double AdditionalSolver::Ctr(double startT, double currentT, double density , double pressure)
 {
     return 3.0/2*Crot();
 }
@@ -1202,22 +1202,13 @@ double AdditionalSolver::EVibr12(double sT, double T, double r, double t)
         for (int i2 = 0; i2 <= L2; i2++)
         {
             double e = (i2 + 1.) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010 )             / kB / T);
-            //for (int i3 = 0; i3 <= L3; i3++)
-            //{
-            //    if ((E_CO2(i1, i2, i3) < De))
-            //    {
-            //
-            //        double r = (i2 + 1.) * (E_CO2(i1, 0, 0) + E_CO2(0, i2, 0))  * exp(-(E_CO2(i1, i2, 0) - E_CO2(0, 0, 0))  / kB / T);
-            //
-            //        E += r;
-            //    }
-            //}
             D += e;
         }
     }
     double ee = ZCO2Vibr12(T);
-    double w = D/ee/mass ;
-    return w;
+    double w = D/ee ;
+    double ww = w/mass;
+    return ww;
 }
 
 double AdditionalSolver::EVibr3(double sT, double T, double r, double t)

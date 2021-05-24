@@ -28,6 +28,8 @@ public:
         EVIBR3,
         LAMBDA12,
         LAMBDA3,
+        C_TR,
+        C_ROT,
         FUNCTION_COUNT
     };
     enum BoundaryConditions
@@ -99,7 +101,7 @@ public:
     QMutex mutex;
     double (*func[FUNCTION_COUNT]) (double t1, double t2, double t3, double t4) = {shareViscositySuperSimple, shareViscositySimple, shareViscosityOmega, bulcViscositySimple,
                                                                                     bulcViscosityOld, bulcViscosityNew, vibrEnergy, fullEnergy, CVibrFunction, lambdaTr,
-                                                                                    lambdaVibr, zVibr, EVibr12, EVibr3, Lambda12, Lambda3};
+                                                                                    lambdaVibr, zVibr, EVibr12, EVibr3, Lambda12, Lambda3, Ctr, Crot};
     static double shareViscositySuperSimple (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscositySimple      (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscosityOmega       (double startT, double currentT, double density = 0, double pressure = 0);
@@ -116,8 +118,8 @@ public:
 
     static double fullEnergy(double T, double Tv);
     static double CVibrFunction (double startT, double currentT, double density = 0, double pressure = 0);
-    static double Crot();
-    static double Ctr();
+    static double Crot(double startT = 0, double currentT = 0, double density = 0, double pressure = 0);
+    static double Ctr(double startT = 0, double currentT = 0, double density = 0, double pressure = 0);
     static double CVibr(double T, double ZCO2Vibr);
     static double ZCO2Vibr(double T);
     static double DZDT(double T);

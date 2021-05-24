@@ -65,8 +65,21 @@ Co23TSolver::Co23TSolver(QObject *parent) : AbstaractSolver(parent)
 
 void Co23TSolver::prepareSolving()
 {
+    auto v = 9.647638124916344e+21;
+    auto rho = v*mass;
+    double tauVibr = additionalSolver.TauVibr(500,66.6);
+    double tauVibr3 = additionalSolver.tauVibrVVLosev(500,66.6);
+    auto deltaE = (additionalSolver.EVibr12(0,500) - additionalSolver.EVibr12(0,300));
+    double r1 =rho *(deltaE/tauVibr + 2*deltaE/ tauVibr3);// + deltaE/ tauVibr );
 
-
+    auto deltaE2 = (additionalSolver.EVibr3(0,500) - additionalSolver.EVibr3(0,300));
+    double r2 =rho* (2*deltaE2/tauVibr3);// + deltaE2/tauVibr3);
+    auto R12=2.975794331223951e+04, R3=2.532191427388069e+02;
+    auto tau_VV23=4.084410046177411e-03,    tau_VT2=3.246615839952078e-03;
+    auto diff12 = R12 - r1;
+    auto diff3 = R3 - r2;
+    auto difftau12 = tauVibr - tau_VT2;
+    auto difftau3 = tauVibr3 - tau_VV23;
 
     U1.resize(solParam.NumCell+2);
     U2.resize(solParam.NumCell+2);
@@ -174,6 +187,7 @@ void Co23TSolver::calcFliux()
         Q_v[i] = qVibr12;
         Q_t[i] = qTr;
         Q_v3[i] = qVibr3;
+        B_v[i] = zetta;
         this->P[i] = P;
          mutex.unlock();
     };
@@ -310,7 +324,7 @@ double Co23TSolver::getEnergyVibr12Temp(double E)
 {
     for(auto i = 0 ; i < EnergyVibr12.size(); i++)
         if( E < EnergyVibr12[i])
-            return (i-1)  * energyVibrStepTemp12 + energyVibrStartTemp12;
+            return (i)  * energyVibrStepTemp12 + energyVibrStartTemp12;
     return (EnergyVibr12.size()-1) * energyVibrStepTemp12 + energyVibrStartTemp12;
 }
 
@@ -318,7 +332,7 @@ double Co23TSolver::getEnergyVibr3Temp(double E)
 {
     for(auto i = 0 ; i < EnergyVibr3.size(); i++)
         if( E < EnergyVibr3[i])
-            return (i-1)  * energyVibrStepTemp3 + energyVibrStartTemp3;
+            return (i)  * energyVibrStepTemp3 + energyVibrStartTemp3;
     return (EnergyVibr3.size()-1) * energyVibrStepTemp3 + energyVibrStartTemp3;
 }
 
@@ -352,10 +366,10 @@ void Co23TSolver::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, co
         double tauVibr = additionalSolver.TauVibr(T[i],pressure[i]);
         double tauVibr3 = additionalSolver.tauVibrVVLosev(T[i],pressure[i]);
         auto deltaE = (additionalSolver.EVibr12(0,T[i]) - additionalSolver.EVibr12(0,T122[i]));
-        double r1 =tempU1[i] *(deltaE/tauVibr + deltaE/ tauVibr3);// + deltaE/ tauVibr );
+        double r1 =tempU1[i] *(deltaE/tauVibr + 2*deltaE/ tauVibr3);// + deltaE/ tauVibr );
 
         auto deltaE2 = (additionalSolver.EVibr3(0,T[i]) - additionalSolver.EVibr3(0,T3[i]));
-        double r2 =tempU1[i]* (deltaE2/tauVibr3);// + deltaE2/tauVibr3);
+        double r2 =tempU1[i]* (2*deltaE2/tauVibr3);// + deltaE2/tauVibr3);
         mutex.lock();
         R_1[i]=r1;
         R_2[i]=r2;
