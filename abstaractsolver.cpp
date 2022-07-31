@@ -217,6 +217,8 @@ void AbstaractSolver::prepareVectors()
     Ent.resize(solParam.NumCell +2);
     Ent2.resize(solParam.NumCell +2);
     B_v.resize(solParam.NumCell +2);
+    E_Z.resize(solParam.NumCell +2);
+    PR.resize(solParam.NumCell +2);
     rezultAfterPStart.resize(solParam.NumCell+1);
 }
 void AbstaractSolver::setTypePlot(int i)

@@ -65,22 +65,6 @@ Co23TSolver::Co23TSolver(QObject *parent) : AbstaractSolver(parent)
 
 void Co23TSolver::prepareSolving()
 {
-    auto v = 9.647638124916344e+21;
-    auto rho = v*mass;
-    double tauVibr = additionalSolver.TauVibr(500,66.6);
-    double tauVibr3 = additionalSolver.tauVibrVVLosev(500,66.6);
-    auto deltaE = (additionalSolver.EVibr12(0,500) - additionalSolver.EVibr12(0,300));
-    double r1 =rho *(deltaE/tauVibr + 2*deltaE/ tauVibr3);// + deltaE/ tauVibr );
-
-    auto deltaE2 = (additionalSolver.EVibr3(0,500) - additionalSolver.EVibr3(0,300));
-    double r2 =rho* (2*deltaE2/tauVibr3);// + deltaE2/tauVibr3);
-    auto R12=2.975794331223951e+04, R3=2.532191427388069e+02;
-    auto tau_VV23=4.084410046177411e-03,    tau_VT2=3.246615839952078e-03;
-    auto diff12 = R12 - r1;
-    auto diff3 = R3 - r2;
-    auto difftau12 = tauVibr - tau_VT2;
-    auto difftau3 = tauVibr3 - tau_VV23;
-
     U1.resize(solParam.NumCell+2);
     U2.resize(solParam.NumCell+2);
     U3.resize(solParam.NumCell+2);
@@ -95,7 +79,6 @@ void Co23TSolver::prepareSolving()
     solParam.Gamma = (UniversalGasConstant/molMass + Cv)/Cv;
     leftParam.soundSpeed = sqrt(solParam.Gamma *UniversalGasConstant/molMass * leftParam.temp);
     leftParam.velocity = solParam.Ma*leftParam.soundSpeed;
-    leftParam.tempIntr = leftParam.temp;
     QFile pythonFile(QDir::currentPath() + "\\Fun.py");
     if( !pythonFile.open(QFile::ReadOnly) )
     {
@@ -106,9 +89,10 @@ void Co23TSolver::prepareSolving()
         breaksolve = true;
         return;
     }
+    //leftParam.gas += "3T";
     rightParam = additionalSolver.bondaryConditionPython(leftParam, solParam);
     double leftEvibr12 = additionalSolver.EVibr12(0,leftParam.temp);
-    double leftEvibr3 = additionalSolver.EVibr3(0,leftParam.temp);
+    double leftEvibr3 = additionalSolver.EVibr3(0,leftParam.tempIntr);
     double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr12 + leftEvibr3;
     double rightEVibr12 = additionalSolver.EVibr12(0,rightParam.temp);
     double rightEVibr3 = additionalSolver.EVibr3(0,rightParam.temp);
@@ -166,29 +150,34 @@ void Co23TSolver::calcFliux()
         double energyVibr3 =  additionalSolver.EVibr3(0,T3);
 
         double etta = additionalSolver.shareViscosityOmega(0,Tx);
-        double zetta =additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
+        double zetta = additionalSolver.bulcViscosityOld2(0,Tx);
 
         double P = (4.0/3*etta + zetta)*du_dx;
         double dt_dx = (tempR - tempL)/delta_h;
         double dt12_dx = (tempRT12 - tempLT12)/delta_h;
         double dt3_dx = (tempRT3 - tempLT3)/delta_h;
-        double qVibr12 = -additionalSolver.Lambda12(Tx,T12)* dt12_dx;
-        double qVibr3 = -additionalSolver.Lambda3(Tx,T3)* dt3_dx;
-        double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
+        double lambda12 = additionalSolver.Lambda12(Tx,T12);
+        double lambda3 = additionalSolver.Lambda3(Tx,T3);
+        double lambdaTR = additionalSolver.lambdaTr_Rot(Tx);
+        double qVibr12 = -lambda12* dt12_dx;
+        double qVibr3 = -lambda3* dt3_dx;
+        double qTr = -lambdaTR*dt_dx;
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double entalpi = Etr_rot + energyVibr12 + energyVibr3 + point.pressure/point.density + pow(point.velocity,2)/2;
-
+        double C_P = 7/2*UniversalGasConstant/molMass + additionalSolver.CVibrFunction(0,Tx);
         F1[i] = point.density * point.velocity;
         F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr12 + qVibr3 + qTr;
         F4[i] = point.density * point.velocity*energyVibr12 + qVibr12;
         F5[i] = point.density * point.velocity*energyVibr3 + qVibr3;
         mutex.lock();
-        Q_v[i] = qVibr12;
-        Q_t[i] = qTr;
-        Q_v3[i] = qVibr3;
+        Q_v[i] = lambda12;
+        Q_t[i] = lambdaTR;
+        Q_v3[i] = lambda3;
         B_v[i] = zetta;
         this->P[i] = P;
+        E_Z[i] = etta;
+        PR[i] =etta;
          mutex.unlock();
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));

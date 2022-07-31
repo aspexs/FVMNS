@@ -11,330 +11,24 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Widget</string>
+   <string>SW-NSF-Solver</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,10" columnstretch="0,0,0,0,0,0,0,0,0,0">
-   <item row="5" column="5">
-    <widget class="QComboBox" name="comboBox_BC"/>
-   </item>
-   <item row="5" column="7">
-    <widget class="QLabel" name="label_16">
+  <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0" columnstretch="0,0,0,0,0,0,0,0,0,0">
+   <item row="13" column="4">
+    <widget class="QLabel" name="label_22">
      <property name="text">
-      <string>Температура Внутр (К): </string>
+      <string>Отображать результаты </string>
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Выберете газ</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="5">
-    <widget class="QComboBox" name="comboBox_timeStep"/>
-   </item>
-   <item row="20" column="0" colspan="9">
-    <widget class="QWidget" name="widget" native="true">
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_time">
-        <property name="text">
-         <string>Время расчета:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="label_error">
-        <property name="text">
-         <string>Суммарный прирост: </string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="QPushButton" name="pushButton_csv">
-        <property name="text">
-         <string>Выгрузить в CSV</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="4" colspan="4">
-    <widget class="QLabel" name="label_8">
-     <property name="text">
-      <string>Задайте настройки расчета ударной волны</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="7">
-    <widget class="QLabel" name="label_12">
-     <property name="text">
-      <string>Начальные параметры</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1" rowspan="18">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="8">
-    <widget class="QDoubleSpinBox" name="doubleSpinBo_temp">
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>300.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="4">
-    <widget class="QLabel" name="label_19">
-     <property name="text">
-      <string>Число ячеек</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="7">
-    <widget class="QLabel" name="label_14">
-     <property name="text">
-      <string>Давление (Па):</string>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="5">
-    <widget class="QSpinBox" name="spinBox_lenght">
-     <property name="maximum">
-      <number>1000</number>
-     </property>
-     <property name="value">
-      <number>30</number>
-     </property>
-    </widget>
-   </item>
-   <item row="13" column="5">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox_tFin">
-     <property name="decimals">
-      <number>7</number>
-     </property>
-     <property name="singleStep">
-      <double>0.001000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.001200000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>От: </string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="spinBox_start">
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>100</number>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>До: </string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="spinBox_stop">
-       <property name="maximum">
-        <number>100000</number>
-       </property>
-       <property name="value">
-        <number>500</number>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Шаг: </string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="doubleSpinBox_step">
-       <property name="decimals">
-        <number>4</number>
-       </property>
-       <property name="maximum">
-        <double>1000.000000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
-       </property>
-       <property name="value">
-        <double>1.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="4" column="5">
-    <widget class="QComboBox" name="comboBox_energy"/>
-   </item>
-   <item row="11" column="4">
-    <widget class="QLabel" name="label_24">
-     <property name="text">
-      <string>Переодичность отображения графика</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="4">
-    <widget class="QLabel" name="label_18">
-     <property name="text">
-      <string>Число куранта</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="4">
-    <widget class="QLabel" name="label_13">
-     <property name="text">
-      <string>Настройки расчета</string>
-     </property>
-    </widget>
-   </item>
-   <item row="17" column="4" colspan="6">
-    <widget class="QPushButton" name="pushButton_cancel">
-     <property name="text">
-      <string>Прервать расчет</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0">
+   <item row="4" column="0">
     <widget class="QLabel" name="label_sigma">
      <property name="text">
-      <string>sigma (angstrem):</string>
+      <string>sigma (m):</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="7">
-    <widget class="QLabel" name="label_15">
-     <property name="text">
-      <string>Температуры (К):</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="4">
-    <widget class="QLabel" name="label_23">
-     <property name="text">
-      <string>Выбор временого шага</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="7">
-    <widget class="QLabel" name="label_17">
-     <property name="text">
-      <string>Число Маха</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="5">
-    <widget class="QComboBox" name="comboBox_bulk"/>
-   </item>
-   <item row="3" column="4">
-    <widget class="QLabel" name="label_9">
-     <property name="text">
-      <string>Вязкость объемная</string>
-     </property>
-    </widget>
-   </item>
-   <item row="15" column="4" colspan="6">
-    <widget class="QPushButton" name="pushButton_start">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="text">
-      <string>Начать расчет</string>
-     </property>
-    </widget>
-   </item>
-   <item row="12" column="5">
-    <widget class="QComboBox" name="comboBox_gamma">
-     <property name="currentIndex">
-      <number>2</number>
-     </property>
-     <item>
-      <property name="text">
-       <string>5/3</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>1,4</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>1,235</string>
-      </property>
-     </item>
-    </widget>
-   </item>
-   <item row="9" column="4">
-    <widget class="QLabel" name="label_20">
-     <property name="text">
-      <string>Длина расчета</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="4">
-    <widget class="QLabel" name="label_21">
-     <property name="text">
-      <string>Длина свободного пробега молекул (m)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="5">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox_lambda">
-     <property name="decimals">
-      <number>7</number>
-     </property>
-     <property name="maximum">
-      <double>1.000000000000000</double>
-     </property>
-     <property name="singleStep">
-      <double>0.001000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.001000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="8">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox_pressure_2">
-     <property name="maximum">
-      <double>100000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>66.659999999999997</double>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="5" colspan="5">
+   <item row="13" column="5" colspan="5">
     <widget class="QComboBox" name="comboBox_typePlot">
      <item>
       <property name="text">
@@ -388,67 +82,102 @@
      </item>
     </widget>
    </item>
-   <item row="13" column="4">
+   <item row="3" column="7">
+    <widget class="QLabel" name="label_14">
+     <property name="text">
+      <string>Давление (Па):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="7">
+    <widget class="QLabel" name="label_15">
+     <property name="text">
+      <string>Температуры (К):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="4">
+    <widget class="QLabel" name="label_27">
+     <property name="text">
+      <string>Сдвиговая вязкость</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="4">
     <widget class="QLabel" name="label_26">
      <property name="text">
       <string>Время окончания расчета</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="4">
-    <widget class="QLabel" name="label_25">
-     <property name="text">
-      <string>Адиабата</string>
+   <item row="1" column="6" rowspan="12">
+    <widget class="Line" name="line_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
     </widget>
    </item>
-   <item row="5" column="4">
-    <widget class="QLabel" name="label_11">
+   <item row="0" column="4" colspan="4">
+    <widget class="QLabel" name="label_8">
      <property name="text">
-      <string>Граничные условия</string>
+      <string>                                         Задайте настройки расчета ударной волны</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QComboBox" name="comboBox_gas">
+   <item row="1" column="9" rowspan="12">
+    <widget class="Line" name="line_4">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" rowspan="17">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3" rowspan="17">
+    <widget class="Line" name="line_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="5">
+    <widget class="QComboBox" name="comboBox_gamma">
+     <property name="currentIndex">
+      <number>2</number>
+     </property>
      <item>
       <property name="text">
-       <string>Аргон - Ar</string>
+       <string>5/3</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>Азот - N2</string>
+       <string>1,4</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>Углекислый газ - CO2</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Углекислый газ - CO2 2T(RS)</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Углекислый газ - CO2 2T(HLLE)</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Углекислый газ - CO2 3T</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Кислород - O2</string>
+       <string>1,235</string>
       </property>
      </item>
     </widget>
    </item>
-   <item row="5" column="2">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Выберите газ и приближение</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QLabel" name="label_6">
@@ -489,50 +218,164 @@
      </item>
     </layout>
    </item>
-   <item row="17" column="2">
+   <item row="14" column="4" colspan="6">
+    <widget class="QPushButton" name="pushButton_start">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>Начать расчет</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="7">
+    <widget class="QLabel" name="label_17">
+     <property name="text">
+      <string>Число Маха</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="5">
+    <widget class="QSpinBox" name="spinBox_lenght">
+     <property name="maximum">
+      <number>1000</number>
+     </property>
+     <property name="value">
+      <number>30</number>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="4">
+    <widget class="QLabel" name="label_11">
+     <property name="text">
+      <string>Граничные условия</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_mass">
+     <property name="text">
+      <string>Масса молекулы (kg) : </string>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="2">
     <widget class="QPushButton" name="pushButton_additionalSolve">
      <property name="text">
       <string>Рассчитать</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="label_2">
+   <item row="7" column="4">
+    <widget class="QLabel" name="label_18">
      <property name="text">
-      <string>Выберете тип дополнительного  расчета</string>
+      <string>Число куранта</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="label_mass">
-     <property name="text">
-      <string>Масса молекулы : </string>
+   <item row="5" column="8">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox_temp_second">
+     <property name="maximum">
+      <double>1000.000000000000000</double>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="6" rowspan="13">
-    <widget class="Line" name="line_3">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="11" column="5">
-    <widget class="QSpinBox" name="spinBox_timeplot">
      <property name="value">
-      <number>10</number>
+      <double>300.000000000000000</double>
      </property>
     </widget>
    </item>
-   <item row="3" column="2">
-    <widget class="QComboBox" name="comboBox_additionalSolvingType"/>
+   <item row="2" column="2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>От: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinBox_start">
+       <property name="minimum">
+        <number>-200</number>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>До: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinBox_stop">
+       <property name="maximum">
+        <number>100000</number>
+       </property>
+       <property name="value">
+        <number>500</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Шаг: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="doubleSpinBox_step">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="maximum">
+        <double>1000.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
-   <item row="16" column="4" colspan="6">
-    <widget class="QPushButton" name="pushButton_pause">
+   <item row="10" column="4">
+    <widget class="QLabel" name="label_24">
      <property name="text">
-      <string>Пауза</string>
+      <string>Периодичность отображения графика</string>
      </property>
     </widget>
+   </item>
+   <item row="4" column="8">
+    <widget class="QDoubleSpinBox" name="doubleSpinBo_temp">
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>300.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="5">
+    <widget class="QComboBox" name="comboBox_timeStep"/>
+   </item>
+   <item row="5" column="7">
+    <widget class="QLabel" name="label_16">
+     <property name="text">
+      <string>Колебательная температура(К): </string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="5">
+    <widget class="QComboBox" name="comboBox_bulk"/>
    </item>
    <item row="8" column="5">
     <widget class="QSpinBox" name="spinBox_numCells">
@@ -544,6 +387,60 @@
      </property>
     </widget>
    </item>
+   <item row="15" column="4" colspan="6">
+    <widget class="QPushButton" name="pushButton_pause">
+     <property name="text">
+      <string>Пауза</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Выберите тип дополнительного  расчета</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="5">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox_tFin">
+     <property name="decimals">
+      <number>7</number>
+     </property>
+     <property name="singleStep">
+      <double>0.001000000000000</double>
+     </property>
+     <property name="value">
+      <double>0.001200000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="5">
+    <widget class="QComboBox" name="comboBox_energy"/>
+   </item>
+   <item row="10" column="5">
+    <widget class="QSpinBox" name="spinBox_timeplot">
+     <property name="value">
+      <number>10</number>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="4">
+    <widget class="QLabel" name="label_19">
+     <property name="text">
+      <string>Число ячеек</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="8">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox_pressure_2">
+     <property name="maximum">
+      <double>100000.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>6.660000000000000</double>
+     </property>
+    </widget>
+   </item>
    <item row="4" column="4">
     <widget class="QLabel" name="label_10">
      <property name="text">
@@ -551,34 +448,151 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="8">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox_temp_second"/>
+   <item row="1" column="7">
+    <widget class="QLabel" name="label_12">
+     <property name="text">
+      <string>Начальные параметры</string>
+     </property>
+    </widget>
    </item>
-   <item row="4" column="0">
+   <item row="5" column="5">
+    <widget class="QComboBox" name="comboBox_BC"/>
+   </item>
+   <item row="2" column="5">
+    <widget class="QComboBox" name="comboBox_share"/>
+   </item>
+   <item row="7" column="8">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox_ma">
+     <property name="value">
+      <double>4.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QComboBox" name="comboBox_gas">
+     <item>
+      <property name="text">
+       <string>Аргон - Ar</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Азот - N2</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Углекислый газ - CO2 1Т модель</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Углекислый газ - CO2 2T модель (RS)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Углекислый газ - CO2 2T модель (HLLE)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Углекислый газ - CO2 3T модель</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Кислород - O2 1Т модель</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="19" column="0" colspan="9">
+    <widget class="QWidget" name="widget" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_time">
+          <property name="text">
+           <string>Время расчета:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_error">
+          <property name="text">
+           <string>Суммарный прирост: </string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_csv">
+        <property name="text">
+         <string>Выгрузить в CSV</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="11" column="4">
+    <widget class="QLabel" name="label_25">
+     <property name="text">
+      <string>Адиабата</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
     <widget class="QLabel" name="label_gasMolMass">
      <property name="text">
-      <string>Молярная масса газа : </string>
+      <string>Молярная масса газа (g/mol): </string>
      </property>
     </widget>
    </item>
-   <item row="14" column="4">
-    <widget class="QLabel" name="label_22">
+   <item row="1" column="2">
+    <widget class="QComboBox" name="comboBox_additionalSolvingType"/>
+   </item>
+   <item row="6" column="4">
+    <widget class="QLabel" name="label_23">
      <property name="text">
-      <string>Отображать результаты </string>
+      <string>Выбор временого шага</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="9" rowspan="13">
-    <widget class="Line" name="line_4">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="16" column="4" colspan="6">
+    <widget class="QPushButton" name="pushButton_cancel">
+     <property name="text">
+      <string>Прервать расчет</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="3" rowspan="18">
-    <widget class="Line" name="line_2">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="1" column="4">
+    <widget class="QLabel" name="label_13">
+     <property name="text">
+      <string>Настройки расчета</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="4">
+    <widget class="QLabel" name="label_9">
+     <property name="text">
+      <string>Вязкость объемная</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="4">
+    <widget class="QLabel" name="label_20">
+     <property name="text">
+      <string>Длина расчета</string>
      </property>
     </widget>
    </item>
@@ -595,23 +609,6 @@
      </property>
      <property name="value">
       <double>0.100000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="4">
-    <widget class="QLabel" name="label_27">
-     <property name="text">
-      <string>Сдвиговая вязкость</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="5">
-    <widget class="QComboBox" name="comboBox_share"/>
-   </item>
-   <item row="7" column="8">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox_ma">
-     <property name="value">
-      <double>7.000000000000000</double>
      </property>
     </widget>
    </item>

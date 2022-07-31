@@ -33,7 +33,7 @@ public:
     AdditionalSolver additionalSolver;
     additionalSolverForCO2 additionalSolverCo2;
 
-    Matrix R, P, Q_v, Q_t, T, Tv, Ent, Ent2, R_1, R_2, T12, T3, Q_v3, B_v;
+    Matrix R, P, Q_v, Q_t, T, Tv, Ent, Ent2, R_1, R_2, T12, T3, Q_v3, B_v, E_Z, PR;
     Matrix U1, U2, U3, U4,U5, pres;
 public slots:
     void pause();

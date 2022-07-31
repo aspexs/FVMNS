@@ -896,6 +896,7 @@ double AdditionalSolver::bulcViscositySimple(double startT, double currentT, dou
 
 double AdditionalSolver::bulcViscosityOld(double startT, double currentT, double density, double pressure)
 {
+
     double zCO2Vibr = ZCO2Vibr(currentT);
     double cVibr = CVibr(currentT, zCO2Vibr);
     return (kB*currentT/Betta(currentT, cVibr))*pow((Crot() + cVibr)/(Crot() + Ctr() + cVibr),2);
@@ -903,25 +904,28 @@ double AdditionalSolver::bulcViscosityOld(double startT, double currentT, double
 
 double AdditionalSolver::bulcViscosityOld2(double CVibr, double T, double density, double pressure)
 {
-    double Cv = CVibr +  Crot() + Ctr();
+    //p*\tau_rot
     double F = 1+ pow(M_PI,3.0/2)/2*pow((T/epsilonDevK),-1.0/2) + (pow(M_PI,2)/4 +2)*pow(T/epsilonDevK,-1) + pow(M_PI,3.0/2)* pow(T/epsilonDevK,-3.0/2);
     double ZettaRot = ZettaInf/F;
-    auto visc = shareViscosityOmega(0,T);
-    double trot = ZettaRot*M_PI*visc/4;
+    double visc = shareViscosityOmega(0,T);
+    double t_rot = ZettaRot*M_PI*visc/4;
 
+    //p*\tau_vibr
     double a=-18.19;
     double b=40.47;
     double c=0;
     double d=0.00423;
-    double tvibr = exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/pressure*101325;
-    double CIntDevTauInt = Crot()/trot + CVibr/tvibr;
-    double Betta =  (3.0*CIntDevTauInt)/(2.0 * Cv)* mass *UniversalGasConstant/molMass *T;
-    return (kB*T/Betta)*pow((Crot() + CVibr)/(Crot() + Ctr() + CVibr),2);
+    double t_vibr = exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))*101325;
+
+    double C_int = CVibr +  Crot();
+    double C_v = C_int + Ctr();
+
+    return gasConst*pow(C_int/C_v ,2) / (Crot()/t_rot + CVibr/t_vibr);
 }
 
 double AdditionalSolver::bulcViscosityNew(double startT, double currentT, double density, double pressure)
 {
-    double zCO2Vibr = ZCO2Vibr(currentT);
+    //double zCO2Vibr = ZCO2Vibr(currentT);
     double cVibr = 0;//CVibr(currentT, zCO2Vibr);
     return additionalSolverForCO2::bulcViscosity(currentT,cVibr, Ctr(), Crot(),pressure);
 }
@@ -936,17 +940,32 @@ double AdditionalSolver::bulcViscosityFalse(double startT, double currentT, doub
     return 0;
 }
 
+double E_CO2(int v1, int v2, int v3)
+{
+    double d[3] = { 1., 2., 1. };
+   //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0) + ox[0] * (v1 + d[0] / 2.0) * (v1 + d[0] / 2.0) + ox[1] * (v1 + d[0] / 2.0) * (v2 + d[1] / 2.0) + ox[2] * (v1 + d[0] / 2.0) * (v3 + d[2] / 2.0) + ox[3] * (v2 + d[1] / 2.0) * (v2 + d[1] / 2.0) + ox[4] * (v2 + d[1] / 2.0) * (v3 + d[2] / 2.0) + ox[5] * (v3 + d[2] / 2.0) * (v3 + d[2] / 2.0));
+    double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0)); //harmonic
+    //double ECO2 = v1 * e100 + v2 * e010 + v3 * e001;
+    //return En_CO2_0[v1][v2]/1.e20;
+    //qDebug() << v1 << v2 << v3;
+    return ECO2;
+}
+
 double AdditionalSolver::vibrEnergy(double startT, double currentT, double density, double pressure)
 {
     int j1, j2, j3;
         double D = 0;
-        for (j1 = 0; j1 < 30; j1++)
+        for (j1 = 0; j1 < 65; j1++)
         {
-            for (j2 = 0; j2 < 65; j2++)
+            for (j2 = 0; j2 < 36; j2++)
             {
                 for (j3 = 0; j3 < 20; j3++)
                 {
-                    D += (j2 + 1.) * (j1 * e100 + j2 * e010 + j3 * e001) * exp(-(j1 * e100 + j2 * e010 + j3 * e001) / kB / currentT);
+                    if (E_CO2(j1, j2, j3) < De)
+                    {
+
+                        D += (j2 + 1.) * (j1 * e100 + j2 * e010 + j3 * e001) * exp(-(j1 * e100 + j2 * e010 + j3 * e001) / kB / currentT);
+                    }
                 }
             }
         }
@@ -1050,14 +1069,13 @@ double AdditionalSolver::Betta(double T, double CVibr)
     double ZettaRot = ZettaInf/F;
     auto visc = shareViscosityOmega(0,T);
     double trot = ZettaRot*M_PI*visc/4;
-
     double a=-18.19;
     double b=40.47;
     double c=0;
     double d=0.00423;
     double tvibr = exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))*101325;
     double CIntDevTauInt = Crot()/trot + CVibr/tvibr;
-    return (3.0*CIntDevTauInt)/(2.0 * Cv)* mass *UniversalGasConstant/molMass *T;
+    return (3.0* kB*T* CIntDevTauInt)/(2.0 * Cv);
 }
 
 double AdditionalSolver::TauRot(double T, double P)
@@ -1077,11 +1095,17 @@ double AdditionalSolver::TauVibr(double T, double P)
     return exp(a+b*pow(T,-1.0/3)+c*pow(T,-2.0/3)+d/(pow(T,-1.0/3)))/P;
 }
 
+double AdditionalSolver::lambdaForNitrogen(double gamma,double T,double density, double pressure)
+{
+    double Pr = 2.0/3;
+    auto etta = shareViscosityOmega(0, T);
+    return gamma*UniversalGasConstant/molMass*etta/(gamma-1)/Pr;
+}
 double AdditionalSolver::lambda(double T, double CVibr)
 {
-    double lambdaTr =(75.0*pow(kB,2)*T)/(32.0*mass*getOmega22(T));
-    double lambdaVibr = (3.0*kB*T)/(8.0*getOmega11(T))*(Crot() + CVibr);
-    return lambdaVibr + lambdaTr;
+    double lambdaTr_rot = lambdaTr_Rot(T);
+    double lambdaVibr = (3.0*kB*T)/(8.0*getOmega11(T))*CVibr;
+    return lambdaVibr + lambdaTr_rot;
 }
 
 double AdditionalSolver::lambdaTr(double startT, double currentT, double density, double pressure )
@@ -1103,7 +1127,6 @@ double AdditionalSolver::lambdaVibr2(double T, double Tv)
 
 double AdditionalSolver::lambdaVibr(double startT, double currentT, double density, double pressure )
 {
-    //return TauVibr(currentT, pressure);
     double zCO2Vibr = ZCO2Vibr(currentT);
     double cVibr = CVibr(currentT, zCO2Vibr);
     return (3.0*kB*currentT)/(8.0*getOmega11(currentT))*(Crot() + cVibr);
@@ -1165,7 +1188,7 @@ QStringList AdditionalSolver::runPython(macroParam left,int mlt )
     QStringList arguments { "Fun.py",
                             left.gas, QString::number(left.velocity), QString::number(left.density),
                             QString::number(left.temp), "Text.txt",
-                            QString::number(mlt)};
+                            QString::number(mlt), QString::number(left.tempIntr),QString::number(left.tempIntr)};
     QProcess p;
     p.start("python", arguments);
     p.waitForFinished();
@@ -1181,15 +1204,7 @@ double AdditionalSolver::getEnergyVibrTemp(double energy, QList<double> &e)
             return i  * 1 + 100-1;
     return (e.size()-1) * 1 + 100 - 1;
 }
-double E_CO2(int v1, int v2, int v3)
-{
-    double d[3] = { 1., 2., 1. };
-    //double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0) + ox[0] * (v1 + d[0] / 2.0) * (v1 + d[0] / 2.0) + ox[1] * (v1 + d[0] / 2.0) * (v2 + d[1] / 2.0) + ox[2] * (v1 + d[0] / 2.0) * (v3 + d[2] / 2.0) + ox[3] * (v2 + d[1] / 2.0) * (v2 + d[1] / 2.0) + ox[4] * (v2 + d[1] / 2.0) * (v3 + d[2] / 2.0) + ox[5] * (v3 + d[2] / 2.0) * (v3 + d[2] / 2.0));
-    double ECO2 = hc * (o2[0] * (v1 + d[0] / 2.0) + o2[1] * (v2 + d[1] / 2.0) + o2[2] * (v3 + d[2] / 2.0)); //harmonic
-    //double ECO2 = v1 * e100 + v2 * e010 + v3 * e001;
-    //return En_CO2_0[v1][v2]/1.e20;
-    return ECO2;
-}
+
 double AdditionalSolver::EVibr12(double sT, double T, double r, double t)
 {
     int L1 = 34;
@@ -1201,7 +1216,7 @@ double AdditionalSolver::EVibr12(double sT, double T, double r, double t)
     {
         for (int i2 = 0; i2 <= L2; i2++)
         {
-            double e = (i2 + 1.) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010 )             / kB / T);
+            double e = (i2 + 1.) * (i1 * e100 + i2 * e010) * exp(-(i1 * e100 + i2 * e010)/ kB / T);
             D += e;
         }
     }
@@ -1230,6 +1245,9 @@ double AdditionalSolver::EVibr3(double sT, double T, double r, double t)
 
 double AdditionalSolver::Lambda12(double sT, double T, double r, double t)
 {
+    //return tauVibrVVLosev(T, 1);
+    //return (3.0*kB*T)/(8.0*getOmega11(T));
+    //return (75.0*pow(kB,2)*T)/(32.0*mass*getOmega22(T)) + (3.0*kB*T)/(8.0*getOmega11(T))*Crot();
     double cVibr = CVibr12(T);
     return (3.0*kB*T)/(8.0*getOmega11(sT))*cVibr;
     //return TauVibr(T,1000);
@@ -1349,12 +1367,12 @@ macroParam AdditionalSolver::bondaryConditionPython(macroParam left, solverParam
     while( 20 > mlt )
     {
         auto values = runPython(left, mlt);
-        if(values.size() == 3)
+        if(values.size() >= 3)
         {
             right.density = values[0].toDouble();
             right.velocity = values[1].toDouble();
             right.temp = values[2].toDouble();
-            right.tempIntr = right.temp;
+            right.tempIntr = values.size() > 3 ? values[3].toDouble() : right.temp;
             right.pressure = right.density*UniversalGasConstant/molMass*right.temp;//  right.density/mass * kB * right.temp;
             return right;
         }

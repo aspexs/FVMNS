@@ -36,18 +36,28 @@ void CO2Solver::calcFliux()
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double zetta = 0;//additionalSolver.bulcViscosityOld2(Cvibr,Tx,point.density, point.pressure);
         double P = (4.0/3*etta + zetta)*du_dx;
-        double lambda = additionalSolver.lambda(Tx, Cvibr);
+        double C_V = Cvibr + additionalSolver.Crot() + additionalSolver.Ctr();
+        double C_P = kB/mass + C_V;
+        double lambda =  additionalSolver.lambda(Tx, Cvibr);
         double dt_dx = (tempR - tempL)/delta_h;
         double q =   -lambda*dt_dx;
         double entalpi = Etr_rot + energyVibr1 + point.pressure/point.density + pow(point.velocity,2)/2;
         F1[i] = point.density * point.velocity;
         F2[i] = F1[i]*point.velocity + point.pressure -P;
         F3[i] = F1[i]*entalpi - P*point.velocity + q;
-         mutex.lock();
-        Q_t[i] = q;
-         B_v[i] = zetta;
-          mutex.unlock();
+        mutex.lock();
+
         this->P[i] = P;
+        Q_t[i] = q;
+        Q_v[i] = Cvibr;
+        Ent[i] = entalpi;
+        Q_v3[i] = lambda;
+        T12[i] = etta;
+        T3[i] = zetta;
+        E_Z[i] = (UniversalGasConstant/molMass + C_V)/C_V; // gamma
+        PR[i] =C_P*etta/lambda;
+        mutex.unlock();
+
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -73,6 +83,7 @@ void CO2Solver::solve()
         T.clear();
         pres.clear();
         Ent.clear();
+
         for (auto energy: energyReal)
         {
             T.push_back(getEnergyTemp(energy));
@@ -119,7 +130,7 @@ void CO2Solver::solve()
         double rightFullEnergy2 = 5.0/2*kB*T/mass + rightEVibr2;
         U3[U3.size() - 1] = U1.last()*(rightFullEnergy2 + pow(U2.last()/U1.last(),2)/2);
 
-        Ent = U3/U1 + pres/U1;
+        //Ent = U3/U1 + pres/U1;
         if(i % solParam.PlotIter == 0)
         {
             setTypePlot(solParam.typePlot);

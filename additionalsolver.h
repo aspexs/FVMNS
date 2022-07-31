@@ -30,6 +30,7 @@ public:
         LAMBDA3,
         C_TR,
         C_ROT,
+        LAMBDA_N2,
         FUNCTION_COUNT
     };
     enum BoundaryConditions
@@ -70,6 +71,7 @@ public:
     double step;
     double pressure = 0;
     double density = 0;
+    double gamma = 0;
     Function typeSolve;
     QVector <double> iterationVector;
     QVector <double> rezultVector;
@@ -101,7 +103,7 @@ public:
     QMutex mutex;
     double (*func[FUNCTION_COUNT]) (double t1, double t2, double t3, double t4) = {shareViscositySuperSimple, shareViscositySimple, shareViscosityOmega, bulcViscositySimple,
                                                                                     bulcViscosityOld, bulcViscosityNew, vibrEnergy, fullEnergy, CVibrFunction, lambdaTr,
-                                                                                    lambdaVibr, zVibr, EVibr12, EVibr3, Lambda12, Lambda3, Ctr, Crot};
+                                                                                    lambdaVibr, zVibr, EVibr12, EVibr3, Lambda12, Lambda3, Ctr, Crot,lambdaForNitrogen};
     static double shareViscositySuperSimple (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscositySimple      (double startT, double currentT, double density = 0, double pressure = 0);
     static double shareViscosityOmega       (double startT, double currentT, double density = 0, double pressure = 0);
@@ -137,7 +139,7 @@ public:
 
     static double zVibr(double startT, double currentT, double density = 0, double pressure = 0);
 
-
+    static double lambdaForNitrogen(double gamma,double T,double density = 0, double pressure = 0);
 
     static macroParam bondaryConditionRG(macroParam left, solverParams solParams);
 

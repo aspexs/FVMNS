@@ -28,7 +28,6 @@ Widget::Widget(QWidget *parent) :
     chartView->setRenderHint(QPainter::NonCosmeticDefaultPen);
     ui->widget->layout()->addWidget(chartView);
     qRegisterMetaType<QVector<double>>("QVector<double>");
-    AdditionalSolver::TauVibr(300, 6.66);
 }
 
 Widget::~Widget()
@@ -74,8 +73,8 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     {
         molMass = 39.9e-3;
         solver = new ArgonSolver;
-        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Супер простая постановка) ");
-        ui->comboBox_share->addItem("Супер простая постановка");
+        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Степенной закон) ");
+        ui->comboBox_share->addItem("Степенной закон");
         solver->typeShareVisc = 0;
     }
     else if (gas.contains("N2"))
@@ -85,14 +84,17 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
          epsilonDevK = 97.5;
          mass = molMass/Nav;
          solver = new NitrogenSolver;
-         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
-         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
+         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Степенной закон) ");
+         ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (По формулам КТ) ");
          ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости");
+         ui->comboBox_additionalSolvingType->addItem("C_Tr");
+          ui->comboBox_additionalSolvingType->addItem("C_Rot");
+          ui->comboBox_additionalSolvingType->addItem("lambda");
 
-         ui->comboBox_share->addItem("Простая постановка");
-         ui->comboBox_share->addItem("Через омега интегралы");
+         ui->comboBox_share->addItem("Степенной закон");
+         ui->comboBox_share->addItem("По формулам КТ");
          solver->typeShareVisc = 1;
-         ui->comboBox_bulk->addItem("Вязкость простая");
+         ui->comboBox_bulk->addItem("Только комтепательно-вращательные степени свободы");
          solver->typeBulkVisc = 0;
     }
     else if(gas.contains("CO2"))
@@ -101,16 +103,16 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
         sigma = 3.763e-10;
         epsilonDevK = 244;
         mass = 7.306e-26;
-        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Простая постановка ) ");
-        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Через омега интегралы) ");
-        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (old) ");
-        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (new) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (Степенной закон) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет сдвиговой вязкости (По формулам КТ) ");
+        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (Через интеграл столкновений)");
+        ui->comboBox_additionalSolvingType->addItem("Расчет объемной вязкости (Через время вращательной релаксации)");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии");
         ui->comboBox_additionalSolvingType->addItem("Расчет общей энергии");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплоемкости");
         ui->comboBox_additionalSolvingType->addItem("Расчет поступательной теплопроводности");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной теплопроводности");
-        ui->comboBox_additionalSolvingType->addItem("Z_vibr");
+        ui->comboBox_additionalSolvingType->addItem("Колебательная стат.сумма");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E12");
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E3");
         ui->comboBox_additionalSolvingType->addItem("lambda12");
@@ -144,9 +146,9 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     ui->comboBox_additionalSolvingType->setCurrentIndex(0);
 
     //mass = molMass/Nav;
-    ui->label_sigma->setText("sigma (angstrem): " + QString::number(sigma));
-    ui->label_gasMolMass->setText("Молярная масса газа: " + QString::number(molMass));
-    ui->label_mass->setText("Масса молекулы газа: " + QString::number(mass));
+    ui->label_sigma->setText("sigma (m): " + QString::number(sigma));
+    ui->label_gasMolMass->setText("Молярная масса газа (g/mol): " + QString::number(molMass));
+    ui->label_mass->setText("Масса молекулы газа (kg): " + QString::number(mass));
     disconnect(solver, SIGNAL(updateGraph(QVector<double>, QVector<double>, double)), this ,SLOT(updatePlot(QVector<double>, QVector<double>, double)));
     disconnect(solver, SIGNAL(updateTime(double, double)), this, SLOT(updateTime(double, double)));
     disconnect(ui->comboBox_typePlot, SIGNAL(currentIndexChanged(int)), solver ,SLOT(setTypePlot(int )));
@@ -178,6 +180,7 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
     }
     additionalSolver->pressure = ui->doubleSpinBox_pressure->value();
     additionalSolver->density = ui->doubleSpinBox_density->value();
+    additionalSolver->gamma = 5.0/4.0;
     if(ui->comboBox_gas->currentIndex() == 0) // Ar
         additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_SUPER_SIMPLE;
     else if (ui->comboBox_gas->currentIndex() == 1) // N2
@@ -187,6 +190,9 @@ void Widget::on_comboBox_additionalSolvingType_currentIndexChanged(int index)
             case 0: additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_SIMPLE; break;
             case 1: additionalSolver->typeSolve = AdditionalSolver::SHARE_VISC_OMEGA; break;
             case 2: additionalSolver->typeSolve = AdditionalSolver::BULC_VISC_SIMPLE; break;
+            case 3: additionalSolver->typeSolve = AdditionalSolver::C_TR; break;
+            case 4: additionalSolver->typeSolve = AdditionalSolver::C_ROT; break;
+            case 5: additionalSolver->typeSolve = AdditionalSolver::LAMBDA_N2; break;
         }
     }
     else if(ui->comboBox_gas->currentIndex() > 1 &&ui->comboBox_gas->currentIndex() < 6) // CO2
@@ -301,11 +307,12 @@ void Widget::on_pushButton_start_clicked()
 {
     solver->leftParam.temp = ui->doubleSpinBo_temp->value();
     solver->leftParam.pressure = ui->doubleSpinBox_pressure_2->value();
+    solver->leftParam.tempIntr = ui->doubleSpinBox_temp_second->value();
     solver->solParam.Ma = ui->doubleSpinBox_ma->value();
     solver->solParam.CFL = ui->doubleSpinBox_CFL->value();
     solver->solParam.NumCell = ui->spinBox_numCells->value();
     solver->solParam.lambdaSol = ui->spinBox_lenght->value();
-    solver->solParam.lambda = ui->doubleSpinBox_lambda->value();
+    solver->solParam.lambda = 0.001;
     solver->solParam.PlotIter = ui->spinBox_timeplot->value();
     solver->solParam.t_fin = ui->doubleSpinBox_tFin->value();
     switch (ui->comboBox_gamma->currentIndex())
@@ -358,6 +365,8 @@ void Widget::on_pushButton_csv_clicked()
             nameFile = "/lambda12.csv";
         else if (ui->comboBox_additionalSolvingType->currentText().contains("lambda3"))
             nameFile = "/lambda3.csv";
+        else if (ui->comboBox_additionalSolvingType->currentText() == "lambda")
+            nameFile = "/lambda.csv";
         QFile file(QDir::currentPath() + nameFile);
         if(file.open(QFile::WriteOnly))
         {
@@ -389,17 +398,18 @@ void Widget::on_pushButton_csv_clicked()
         if(file.open(QFile::WriteOnly))
         {
             QTextStream out(&file);
-            out  << "X"<< "Давление" << ";" << "Плотность" << ";" << "Скорость" << ";"
-                << "Температура" << ";"<< "Колеательная температура" << ";"
-                << "Тензор напряжения" << ";"<< "Постепательный тепловой поток" << ";"
-                << "Колебательный тепловой поток (для 3Т это qVibr12)" << ";"<< "Энтальпия" << ";"
-                << "Колебательный тепловой поток qVibr3" << "Температура T12" <<"Температура T3" <<"\n";
+            out  << "X"<< ";"<< "Press" << ";" << "Density" << ";" << "Velosity" << ";"
+                << "Temp" << ";"<< "Vibt Temp" << ";"
+                << "Pressure tenzor" << ";"<< "Heat vector" << ";"
+                << "Vibr heat(3Т - qVibr12, 1T - C_vibr)" << ";"<< "Entalpy" << ";"
+                << "vibr heat (3T - qVibr3, 1T - lambda)" << ";"<< "Temp T12 (1T - eta)" << ";" <<"Temp T3(1T - zeta)" << ";"
+                << "gamma" << ";;"<< "PR" <<  "\n";
              for(int i = 0; i <_x.size(); i ++)
              {
                 out << _x[i]            << ";" << solver->pres[i]   << ";" << solver->U1[i]     << ";" << solver->U2[i]/solver->U1[i] << ";"
                     << solver->T[i]     << ";" << solver->Tv[i]     << ";" << solver->P[i]      << ";" << solver->Q_t[i]              << ";"
                     << solver->Q_v[i]   << ";" << solver->Ent[i]    << ";" << solver->Q_v3[i]   << ";" << solver->T12[i]              << ";"
-                    << solver->T3[i]    << "\n";
+                    << solver->T3[i]    << ";" << solver->E_Z[i]    << ";" << solver->B_v[i]<< ";" << solver->PR[i]<<"\n" ;
              }
              out << _time;
         }
