@@ -88,10 +88,12 @@ void NitrogenSolver::calcFliux()
         //auto du_dx = (right_velocity[i] - point.velocity)/delta_h*2;
         //auto du_dx = (point.velocity - left_velocity[i])/delta_h*2;
         mutex.unlock();
+
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
+        T[i] = Tx;
         double Pr = 2.0/3;
-        double etta = additionalSolver.shareViscosity[typeShareVisc](leftParam.temp, Tx,0,0);
-        double zetta = 0;//additionalSolver.bulkViscosity[typeBulkVisc](0,Tx,point.density, point.pressure);
+        double etta = additionalSolver.shareViscosityOmega(leftParam.temp, Tx,0,0);
+        double zetta = additionalSolver.bulkViscosity[typeBulkVisc](0,Tx,point.density, point.pressure);
         double G =  (4.0/3*etta + zetta)*du_dx;
         double k = solParam.Gamma*UniversalGasConstant/molMass*etta/(solParam.Gamma-1)/Pr;
         //qDebug() << G << Tx << du_dx;

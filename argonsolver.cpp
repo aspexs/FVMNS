@@ -160,6 +160,7 @@ void ArgonSolver::calcFliux()
         auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
         mutex.unlock();
         double Tx = point.pressure/(point.density*UniversalGasConstant/molMass);
+        T[i] = Tx;
         double Pr = 2.0/3;
         double etta = additionalSolver.shareViscosity[0](leftParam.temp, Tx,0,0);
         double G =  (4.0/3*etta)*du_dx;

@@ -7,6 +7,8 @@ const double Nav(6.02214129e23);
 const double UniversalGasConstant = 8.3144598;
 const double kB=1.38064852e-23;    // J/K
 const double kBE = 8.617e-5;       // const Bolz elVolt*K
+static const double massaCO2 = 7.306e-26; // m_CO_2
+static const double gasConst = kB/massaCO2;
 static const double e100 = 2.757135054E-20;
 static const double e010 = 1.32493446E-20;
 static const double e001 = 4.66607366E-20;
@@ -21,7 +23,7 @@ static const double sigmaCO2CO2_mix2 = 3.763e-10; // collision diameter in m
 static const double alpha1_CO2 = 17.5 / sigmaCO2CO2_mix2;
 static const double a_SSH[3] = { 1. / 2., 8. / 11., 1. / 2. };
 static const double a1_SSH[3] = { 8. / 11., 1. / 2., 3. / 11. };
-static const double massaCO2 = 7.306e-26; // m_CO_2
+
 static const double masRed_CO2_CO2 = massaCO2 / 2.;
 static const double m[3] = { 1.46e-26, 1.338e-26, 1.46e-26 };
 static const double ww = 1.60219e-21 / 8065.47; // if you need energy in J (not in meV) 1.60219e-19 / 8065.47

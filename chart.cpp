@@ -42,8 +42,8 @@ Chart::Chart(QGraphicsItem *parent, Qt::WindowFlags wFlags):
 
     m_axis->setTickCount(10);
 
-    axisX()->setRange(0, 1);
-    axisY()->setRange(0, 1);
+    //axisX()->setRange(0, 1);
+    //axisY()->setRange(0, 1);
 
 }
 
@@ -60,7 +60,7 @@ void Chart::setData(QVector<double> x, QVector<double> y, double lambda)
     minY = *std::min_element(y.begin(), y.end());
     maxY = *std::max_element(y.begin(), y.end());
     TintMax =maxY;
-    axisY()->setRange(minY*0.99, maxY*1.01);
+    axisY()->setRange(minY, maxY);
     m_series->clear();
     for(auto i = 0; i < x.size(); i++)
         m_series->append(x[i]/lambda, y[i]);

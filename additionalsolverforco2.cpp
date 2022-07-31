@@ -15,7 +15,7 @@ double additionalSolverForCO2::bulcViscosity(double T, double C_vibr, double C_t
 {
     double CV = C_rot + C_tr + C_vibr;
 
-    pressure = 101325;
+    //pressure = 101325;
     double n = pressure / (kB*T);
 
     double E_av_full = (/*C_vibr / TauVibrNew(T, n, C_vibr) +*/ C_rot / tau_rot_CO2(T, pressure))*massaCO2 / (kB*n);

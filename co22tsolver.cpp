@@ -40,13 +40,15 @@ void Co22TSolver::calcFliux()
         mutex.unlock();
 
         double etta = additionalSolver.shareViscosityOmega(0,Tx);
-        double zetta =0;//additionalSolver.bulcViscosityOnlyTRRot(0,Tx);
+        double zetta = additionalSolver.bulcViscosityOnlyTRRot(0,Tx, 0, point.pressure);
 
         double P = (4.0/3*etta + zetta)*du_dx;
         double dt_dx = (tempR - tempL)/delta_h;
         double dtv_dx = (tempRtv - tempLtv)/delta_h;
-        double qVibr = -additionalSolver.lambdaVibr2(Tx,Tv)* dtv_dx;
-        double qTr = -additionalSolver.lambdaTr_Rot(Tx)*dt_dx;
+        double lambdaVibr = additionalSolver.lambdaVibr2(Tx,Tv);
+        double lambdaTr = additionalSolver.lambdaTr_Rot(Tx);
+        double qVibr = -lambdaVibr* dtv_dx;
+        double qTr = -lambdaTr*dt_dx;
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double entalpi = Etr_rot + energyVibr + point.pressure/point.density + pow(point.velocity,2)/2;
 
@@ -54,10 +56,13 @@ void Co22TSolver::calcFliux()
         F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr + qTr;
         F4[i] = point.density * point.velocity*energyVibr + qVibr;
-        Q_v[i] = qVibr;
-        Q_t[i] = qTr;
-        B_v[i] = zetta;
-        this->P[i] = P;
+        //double C_P = 7/2*UniversalGasConstant/molMass + additionalSolver.CVibrFunction(0,Tx);
+        //Q_v[i] = qVibr;
+        //Q_t[i] = qTr;
+        //B_v[i] = zetta;
+        //E_Z[i] = zetta/etta;
+        PR[i] = etta;
+        this->P[i] = zetta/etta;
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
