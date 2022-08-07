@@ -93,8 +93,8 @@ public:
                                                                  double dt, double delta_h, Matrix F11, Matrix F22, Matrix F33, Matrix F44, Matrix R);
      QVector<Matrix> SolveMUSCL_UL_UR(Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, double Gamma, double dt_dx,QVector<double>EnergyVibr, double energyStepTemp, double energyStartTemp,int LimType = 1, double omega = 0);
 
-     QVector<QVector<double>> SEEFOForCO23T(Matrix F1,      Matrix F2,      Matrix F3,      Matrix F4,      Matrix F5,
-                                            Matrix U1old,   Matrix U2old,   Matrix U3old,   Matrix U4old,   Matrix U5old,
+     QVector<QVector<double>> SEEFOForCO23T(Matrix F1,      Matrix F2,      Matrix F3,      Matrix F4,      Matrix F5,      Matrix F6,
+                                            Matrix U1old,   Matrix U2old,   Matrix U3old,   Matrix U4old,   Matrix U5old,   Matrix U6old,
                                             double dt, double delta_h, Matrix R_1, Matrix R_2);
 
 signals:

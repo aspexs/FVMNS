@@ -9,6 +9,7 @@
 #include "co22tsolver.h"
 #include "co22tsolverK.h"
 #include "co23tsolver.h"
+#include "MixtureSolvers/mixtureco2ar.h"
 #include <additionalsolver.h>
 #include <chart.h>
 #include <QChartView>

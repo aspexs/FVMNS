@@ -164,7 +164,6 @@ void Co23TSolver::calcFliux()
         double qTr = -lambdaTR*dt_dx;
         double Etr_rot = 5.0/2*kB*Tx/mass;
         double entalpi = Etr_rot + energyVibr12 + energyVibr3 + point.pressure/point.density + pow(point.velocity,2)/2;
-        double C_P = 7/2*UniversalGasConstant/molMass + additionalSolver.CVibrFunction(0,Tx);
         F1[i] = point.density * point.velocity;
         F2[i] = point.density * point.velocity*point.velocity + point.pressure - P;
         F3[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr12 + qVibr3 + qTr;
@@ -264,7 +263,7 @@ void Co23TSolver::solve()
 
          solveFlux();
 
-         auto res = additionalSolver.SEEFOForCO23T(F1, F2, F3, F4, F5, U1, U2, U3, U4, U5, dt, delta_h, R_1, R_2);
+         auto res = additionalSolver.SEEFOForCO23T(F1, F2, F3, {}, F4, F5, U1, U2, U3, {}, U4, U5, dt, delta_h, R_1, R_2);
          auto copyU1 = U1;
          auto copyU2 = U2;
          auto copyU3 = U3;
@@ -345,9 +344,7 @@ void Co23TSolver::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, co
     for (auto energy: E_tr_rot)
         T.push_back(energy*2*mass/(5*kB));
 
-    //R12 =  rho*(EVibr12(T) - Evibr12(T12)) / tayVt2
-    //+  rho*(EVibr12(T) - Evibr12(T12))/tayVv23 + rho*(EVibr12(T) - Evibr12(T12))/tayVv123
-    //R3 =  rho*(EVibr3(T) - Evibr3(T3))/tayVv23 + rho*(EVibr3(T) - Evibr3(T3))/tayVv123
+
     pressure = tempU1*T*UniversalGasConstant/molMass;
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calc = [&](int& i)

@@ -147,6 +147,7 @@ public:
             output.push_back(data[i] / div[i]);
         return output;
     }
+
     Matrix operator *(QVector<double> div)
     {
         QVector<double> output;
