@@ -1,65 +1,66 @@
 #include "mixtureco2ar.h"
 #include <QMessageBox>
+
 MixtureCo2Ar::MixtureCo2Ar(QObject *parent) : AbstaractSolver(parent)
 {
     // тут надо подготовить и считать из файла все предварительно расчитанные данные,
     // если они есть
     localTemp.resize(solParam.NumCell+1);
+    mixture.initialize();
 }
 
 void MixtureCo2Ar::prepareSolving()
 {
-    U1.resize(solParam.NumCell+2);
-    U2.resize(solParam.NumCell+2);
-    U3.resize(solParam.NumCell+2);
-    U4.resize(solParam.NumCell+2);
-    U5.resize(solParam.NumCell+2);
-    U6.resize(solParam.NumCell+2);
-    R_1.resize(solParam.NumCell+2);
-    R_2.resize(solParam.NumCell+2);
+    U1.resize(solParam.NumCell + 2);
+    U2.resize(solParam.NumCell + 2);
+    U3.resize(solParam.NumCell + 2);
+    U4.resize(solParam.NumCell + 2);
+    U5.resize(solParam.NumCell + 2);
+    U6.resize(solParam.NumCell + 2);
+    R_1.resize(solParam.NumCell + 2);
+    R_2.resize(solParam.NumCell + 2);
 
-    //структура leftParam содержит все что слева. ее надо корректно наполнить
-    // возможно для смеси ее надо расширить.
-    //leftParam.density ...
-    double leftEvibr12 = additionalSolver.EVibr12(0,leftParam.temp);
-    double leftEvibr3 = additionalSolver.EVibr3(0,leftParam.tempIntr);
-    // особое вниамние тут, ибо полная энергия тут явно поменялась.
-    double leftFullEnergy = 5.0/2*kB*leftParam.temp/mass + leftEvibr12 + leftEvibr3;
+    // Инициализация
+    tc_2::SpecificHeatDc heat;
+    tc_2::EnergyDc leftEnergy;
+    tc_2::EnergyDc rightEnergy;
+    heat.initialize();
+    leftEnergy.initialize();
+    rightEnergy.initialize();
 
-    // затем надо применить граничные условия для вычисления того, что справа.
-    // этот шаг я возьму на себя в ближайшую неделю (Илья).
+    // Привязка объектов друг к другу
+    heat.link(mixture);
+    leftEnergy.link(mixture);
+    leftEnergy.link(heat);
+    rightEnergy.link(mixture);
+    rightEnergy.link(heat);
 
-    // далее заполняем аналогичный параметр rightParam
+    // Расчет энергий !Важно - на единицу объема, а не массы. + rho * v^2 / 2!
+    heat.compute(leftParam.t12, leftParam.t3);
+    leftEnergy.compute(leftParam);
+    heat.compute(rightParam.t12, rightParam.t3);
+    rightEnergy.compute(rightParam);
 
-    double rightEVibr12 = additionalSolver.EVibr12(0,rightParam.temp);
-    double rightEVibr3 = additionalSolver.EVibr3(0,rightParam.temp);
-    // тут тоже
-    double rightFullEnergy = 5.0/2*kB*rightParam.temp/mass + rightEVibr12 + rightEVibr3;
-
-    for(auto i  = 1; i < solParam.NumCell+1; i++)
+    // Исправил !Использую плотности каждого из сортов, а не их концентрации!
+    for (auto i  = 1; i < solParam.NumCell+1; i++)
     {
-        if(i < solParam.NumCell/3 +1)
+        if (i < solParam.NumCell / 3 + 1)
         {
-            // подразумеваю что ты тут будешь заполнять через удельные концентрации
-            //U1[i] = n_co2
-
-            // Так же надо быть внимательным с плотностями, я так понимаю для U5 и U6 они другие
-            // если жэжто так, поправь пожалуйста.
-            U2[i] = leftParam.density;
-            U3[i] = leftParam.density*leftParam.velocity;
-            U4[i] = leftParam.density*(leftFullEnergy + pow(leftParam.velocity,2)/2);
-            U5[i] = leftParam.density*leftEvibr12;
-            U6[i] = leftParam.density*leftEvibr3;
+            U1[i] = leftParam.rho[0];
+            U2[i] = leftParam.rho[1];
+            U3[i] = (leftParam.rho[0] + leftParam.rho[1]) * leftParam.v;
+            U4[i] = leftEnergy.fullE();
+            U5[i] = leftEnergy.vE12();
+            U6[i] = leftEnergy.vE3();
         }
-
         else
         {
-             //U1[i] = n_co2
-            U2[i] = rightParam.density;
-            U3[i] = rightParam.density*rightParam.velocity;
-            U4[i] = rightParam.density*(rightFullEnergy + pow(rightParam.velocity,2)/2);
-            U5[i] = rightParam.density*rightEVibr12;
-            U6[i] = rightParam.density*rightEVibr3;
+            U1[i] = rightParam.rho[0];
+            U2[i] = rightParam.rho[1];
+            U3[i] = (rightParam.rho[0] + rightParam.rho[1]) * rightParam.v;
+            U4[i] = rightEnergy.fullE();
+            U5[i] = rightEnergy.vE12();
+            U6[i] = rightEnergy.vE3();
         }
     }
     prepareVectors();
@@ -69,62 +70,56 @@ void MixtureCo2Ar::solveFlux()
 {
     calcRiemanPStar();
     calcFliux();
-    calcR(U1,U2,U3,U4,U5,U6);
+    calcR(U1, U2, U3, U4, U5, U6);
 }
 
 void MixtureCo2Ar::calcFliux()
 {
-    // наша главная функция и головная боль
+    // CHECK Внес изменения, не уверен, будет ли это все распараллеливаться...
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calcFlux = [this](int& i)
     {
         // забираем результаты из расчета разрыва потока.
-        mutex.lock();
-        auto point = rezultAfterPStart[i];
-        double tempL = Tl[i];
-        double tempR = Tr[i];
-        auto du_dx = (right_velocity[i] - left_velocity[i])/delta_h;
-        auto tempLT12 = T12L[i];
-        auto tempRT12 = T12R[i];
-        auto tempLT3 = T3L[i];
-        auto tempRT3 = T3R[i];
-        double Tx =  point.pressure/(point.density*UniversalGasConstant/molMass);
-        double T12 = tempLT12;
-        double T3 = tempLT3;
-        mutex.unlock();
+//        mutex.lock();
+//        auto point = rezultAfterPStart[i];
+//        double lT = Tl[i];
+//        double rT = Tr[i];
+//        auto dv_dx = (right_velocity[i] - left_velocity[i]) / delta_h;
+//        auto tempLT12 = T12L[i];
+//        auto tempRT12 = T12R[i];
+//        auto tempLT3 = T3L[i];
+//        auto tempRT3 = T3R[i];
+//        double Tx =  point.pressure/(point.density*UniversalGasConstant/molMass);
+//        double T12 = tempLT12;
+//        double T3 = tempLT3;
+//        mutex.unlock();
 
-        localTemp[i] = Tx;
-        double dt_dx = (tempR - tempL)/delta_h;
-        double dt12_dx = (tempRT12 - tempLT12)/delta_h;
-        double dt3_dx = (tempRT3 - tempLT3)/delta_h;
+        // TODO Нет информации по плотностямсортовслева и справа,
+        // надо добавить, cм. dx_dx (формула (21) методички)
+        macroParam point = rezultAfterPStart[i];
+        double dv_dx = (right_velocity[i] - left_velocity[i]) / delta_h;
+        double dT_dx = (Tr[i] - Tl[i]) / delta_h;
+        double dT12_dx = (T12R[i] - T12L[i]) / delta_h;
+        double dT3_dx = (T3R[i] - T3L[i]) / delta_h;
+        double dp_dx = (right_pressure[i] - left_pressure[i]) / delta_h;
+        localTemp[i] = point.p / (point.rho[0] / mixture.mass()[0] +
+                point.rho[1]/ mixture.mass()[1]) / tc_2::K_BOLTZMANN;
 
-        // тут блок который аналогичен тому, что было в трехтемпературном приближении
-        double energyVibr12 =  additionalSolver.EVibr12(0,T12);
-        double energyVibr3 =  additionalSolver.EVibr3(0,T3);
+        // Инициализация
+        tc_2::Computer computer;
+        computer.initialize();
 
-        // тут блок который изменился
-        double etta     = 0; // FIXME additionalSolver.shareViscosityOmega(0,Tx);
-        double zetta    = 0; // FIXME additionalSolver.bulcViscosityOld2(0,Tx);
-        double lambdaTR = 0; // FIXME additionalSolver.lambdaTr_Rot(Tx);
-        double qDiff    = 0; // FIXME дополнить
-        double lambda12 = 0; // FIXME additionalSolver.Lambda12(Tx,T12);
-        double lambda3  = 0; // FIXME additionalSolver.Lambda3(Tx,T3);
-        double Etr_rot  = 0; // FIXME 5.0/2*kB*Tx/mass;
-        // это уже конечные соотношения
-        double P        = (4.0/3*etta + zetta)*du_dx;
-        double qTr      = -lambdaTR*dt_dx;
-        double qVibr12  = -lambda12* dt12_dx;
-        double qVibr3   = -lambda3* dt3_dx;
+        // Привязка и расчет вектора потоков
+        computer.link(mixture);
+        computer.compute(point, dx_dx, dp_dx, dT_dx, dT12_dx, dT3_dx, dv_dx);
 
-        double E12_diff = 0; // Соответствует самой правой части уравнения 5
-        double E3_diff  = 0; // Соответствует самой правой части уравнения 6
-        double entalpi  = Etr_rot + energyVibr12 + energyVibr3 + point.pressure/point.density + pow(point.velocity,2)/2;
-        F1[i] = 0; // дополнить
-        F2[i] = point.density * point.velocity;
-        F3[i] = point.density * point.velocity*point.velocity + point.pressure - P;
-        F4[i] = point.density * point.velocity*entalpi - P*point.velocity + qVibr12 + qVibr3 + qTr + qDiff;
-        F5[i] = point.density * point.velocity*energyVibr12 + qVibr12 - E12_diff;
-        F6[i] = point.density * point.velocity*energyVibr3 + qVibr3 - E3_diff;
+        // Обновляем значения
+        F1[i] = computer.flowComputer().flow()[0];
+        F2[i] = computer.flowComputer().flow()[1];
+        F3[i] = computer.flowComputer().flow()[2];
+        F4[i] = computer.flowComputer().flow()[3];
+        F5[i] = computer.flowComputer().flow()[4];
+        F6[i] = computer.flowComputer().flow()[5];
     };
     futureWatcher.setFuture(QtConcurrent::map(vectorForParallelSolving, calcFlux));
     futureWatcher.waitForFinished();
@@ -228,8 +223,8 @@ void MixtureCo2Ar::solve()
         double Evibr12 = U5.last()/U1.last();
         double Evibr3 = U6.last()/U1.last();
         // FIXME исправить полную энергию.
-        double rightFullEnergy = 5.0/2*kB*T/mass + Evibr12 + Evibr3;
-        U4[U4.size() - 1] = U2.last()*(rightFullEnergy + pow(U3.last()/U2.last(),2)/2);
+        double rightFulleftEnergy = 5.0/2*kB*T/mass + Evibr12 + Evibr3;
+        U4[U4.size() - 1] = U2.last()*(rightFulleftEnergy + pow(U3.last()/U2.last(),2)/2);
 
         if(i % solParam.PlotIter == 0)
         {
@@ -248,7 +243,8 @@ void MixtureCo2Ar::solve()
     }
 }
 
-void MixtureCo2Ar::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3, const Matrix &U4, const Matrix &U5, const Matrix &U6)
+void MixtureCo2Ar::calcR(const Matrix &U1, const Matrix &U2, const Matrix &U3,
+                         const Matrix &U4, const Matrix &U5, const Matrix &U6)
 {
     Matrix pressure;
     auto tempU2 = U2;
