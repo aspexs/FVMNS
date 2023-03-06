@@ -254,7 +254,7 @@ public:
 /// интерполяции, использует класс EnergyDc.
 class TemperatureNDc : public Temperature
 {
-public: // TODO
+protected:
 
     // Таблицы для интерполяции
     QVector<double> vT12_v;

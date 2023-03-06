@@ -1,5 +1,4 @@
 QT -= gui
-QT += widgets
 QT += concurrent
 
 CONFIG += c++11 console
@@ -17,15 +16,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        abstaractsolver.cpp \
-        additionalsolver.cpp \
-        additionalsolverforco2.cpp \
         global.cpp \
         main.cpp \
         mixtureco2ar.cpp \
         transport_m_2.cpp
-
-
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -33,9 +27,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    abstaractsolver.h \
-    additionalsolver.h \
-    additionalsolverforco2.h \
     global.h \
     mixtureco2ar.h \
     transport_m_2.h

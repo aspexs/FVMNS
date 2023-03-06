@@ -1,7 +1,6 @@
 #ifndef MIXTURECO2AR_H
 #define MIXTURECO2AR_H
 
-#include "global.h"
 #include "transport_m_2.h"
 
 /// MixtureCo2Ar - предоставляет инструменты для решения задачи о
@@ -10,10 +9,16 @@ class MixtureCo2Ar
 {
 public:
 
+    MixtureCo2Ar();
+
     void initialize(const SolverParams& init);
     void solve();
 
-    MixtureCo2Ar();
+    QVector<QVector<double>> saveMacroParams();
+    QVector<QVector<double>> saveU();
+    QVector<QVector<double>> saveF();
+    QVector<QVector<double>> saveHlleF();
+    QVector<QVector<double>> saveR();
 
 private:
 
@@ -27,7 +32,8 @@ private:
     SolverParams solParam;
 
     // Шаг по времени, абсолютное суммарное изменение потоков
-    double dt, error;
+    double dt    = 0.0;
+    double error = 0.0;
 
     // Все макропараметры течения во всех точках
     QVector<MacroParam> points;

@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::OmegaIntegrals::initialize()
+void OmegaIntegrals::initialize()
 {
     // Подгонка размеров столбцов матриц омега-интегралов
     omega11_vv.resize(N_SORTS);
@@ -37,31 +37,31 @@ void tc_2::OmegaIntegrals::initialize()
 }
 
 // Доступ к соответствующим полям
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::omega11() const
+const QVector<QVector<double>>& OmegaIntegrals::omega11() const
 {
     return omega11_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::omega12() const
+const QVector<QVector<double>>& OmegaIntegrals::omega12() const
 {
     return omega12_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::omega13() const
+const QVector<QVector<double>>& OmegaIntegrals::omega13() const
 {
     return omega13_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::omega22() const
+const QVector<QVector<double>>& OmegaIntegrals::omega22() const
 {
     return omega22_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::aa() const
+const QVector<QVector<double>>& OmegaIntegrals::aa() const
 {
     return aa_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::bb() const
+const QVector<QVector<double>>& OmegaIntegrals::bb() const
 {
     return bb_vv;
 }
-const QVector<QVector<double>>& tc_2::OmegaIntegrals::cc() const
+const QVector<QVector<double>>& OmegaIntegrals::cc() const
 {
     return cc_vv;
 }
@@ -71,10 +71,10 @@ const QVector<QVector<double>>& tc_2::OmegaIntegrals::cc() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::OmegaIntegralsDc::initialize()
+void OmegaIntegralsDc::initialize()
 {
     // Предварительная инициализация
-    tc_2::OmegaIntegrals::initialize();
+    OmegaIntegrals::initialize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,10 +82,10 @@ void tc_2::OmegaIntegralsDc::initialize()
 ///////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::OmegaIntegralsDcLjp::initialize()
+void OmegaIntegralsDcLjp::initialize()
 {
     // Предварительная инициализация
-    tc_2::OmegaIntegralsDc::initialize();
+    OmegaIntegralsDc::initialize();
 
     // Обнуление
     sig_ij = 0.0;
@@ -96,7 +96,7 @@ void tc_2::OmegaIntegralsDcLjp::initialize()
 }
 
 // Расчет всех значений омега-интегралов
-void tc_2::OmegaIntegralsDcLjp::compute(const double& t)
+void OmegaIntegralsDcLjp::compute(const double& t)
 {
     // Проход по возможным сочетаниям сортов
     for (int i = 0; i < N_SORTS; ++i)
@@ -152,7 +152,7 @@ void tc_2::OmegaIntegralsDcLjp::compute(const double& t)
 ///////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::SpecificHeat::initialize()
+void SpecificHeat::initialize()
 {
     zvT12_s = 0.0;
     zvT3_s = 0.0;
@@ -161,19 +161,19 @@ void tc_2::SpecificHeat::initialize()
 }
 
 // Доступ к соответствующим полям
-const double& tc_2::SpecificHeat::zvT12() const
+const double& SpecificHeat::zvT12() const
 {
     return zvT12_s;
 }
-const double& tc_2::SpecificHeat::zvT3() const
+const double& SpecificHeat::zvT3() const
 {
     return zvT3_s;
 }
-const double& tc_2::SpecificHeat::cvT12() const
+const double& SpecificHeat::cvT12() const
 {
     return cvT12_s;
 }
-const double& tc_2::SpecificHeat::cvT3() const
+const double& SpecificHeat::cvT3() const
 {
     return cvT3_s;
 }
@@ -183,7 +183,7 @@ const double& tc_2::SpecificHeat::cvT3() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Расчет статистических сумм и удельных теплоемкостей
-void tc_2::SpecificHeatDc::computeZv(const double& t12, const double& t3)
+void SpecificHeatDc::computeZv(const double& t12, const double& t3)
 {
     // Вспомогательные переменные
     int g = 0;
@@ -217,7 +217,7 @@ void tc_2::SpecificHeatDc::computeZv(const double& t12, const double& t3)
         }
     }
 }
-void tc_2::SpecificHeatDc::computeCv(const double& t12, const double& t3)
+void SpecificHeatDc::computeCv(const double& t12, const double& t3)
 {
     // Вспомогательные переменные
     int g = 0;
@@ -263,14 +263,14 @@ void tc_2::SpecificHeatDc::computeCv(const double& t12, const double& t3)
 }
 
 // Инициализация
-void tc_2::SpecificHeatDc::initialize()
+void SpecificHeatDc::initialize()
 {
     // Предварительная инициализация
-    tc_2::SpecificHeat::initialize();
+    SpecificHeat::initialize();
 }
 
 // Расчет всех значений
-void tc_2::SpecificHeatDc::compute(const double& t12, const double& t3)
+void SpecificHeatDc::compute(const double& t12, const double& t3)
 {
     // Порядок имеет значение
     computeZv(t12, t3);
@@ -282,7 +282,7 @@ void tc_2::SpecificHeatDc::compute(const double& t12, const double& t3)
 ///////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::Energy::initialize()
+void Energy::initialize()
 {
     vE12_s = 0.0;
     vE3_s = 0.0;
@@ -292,23 +292,23 @@ void tc_2::Energy::initialize()
 }
 
 // Доступ к соответствующим полям
-const double& tc_2::Energy::vE12() const
+const double& Energy::vE12() const
 {
     return vE12_s;
 }
-const double& tc_2::Energy::vE3() const
+const double& Energy::vE3() const
 {
     return vE3_s;
 }
-const double& tc_2::Energy::rE() const
+const double& Energy::rE() const
 {
     return rE_s;
 }
-const double& tc_2::Energy::tE() const
+const double& Energy::tE() const
 {
     return tE_s;
 }
-const double& tc_2::Energy::fullE() const
+const double& Energy::fullE() const
 {
     return fullE_s;
 }
@@ -318,7 +318,7 @@ const double& tc_2::Energy::fullE() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Расчет соответствующих энергий
-void tc_2::EnergyDc::computeVe12(const double& t12)
+void EnergyDc::computeVe12(const double& t12)
 {
     double ee = 0.0;
     vE12_s = 0.0;
@@ -336,7 +336,7 @@ void tc_2::EnergyDc::computeVe12(const double& t12)
     }
     vE12_s *= 1.0 / (heat_.zvT12() * Mixture::mass(0));
 }
-void tc_2::EnergyDc::computeVe3(const double& t3)
+void EnergyDc::computeVe3(const double& t3)
 {
     double ee = 0.0;
     vE3_s = 0.0;
@@ -350,32 +350,31 @@ void tc_2::EnergyDc::computeVe3(const double& t3)
     }
     vE3_s *= 1.0 / (heat_.zvT3() * Mixture::mass(0));
 }
-void tc_2::EnergyDc::computeRe(const MacroParam& param)
+void EnergyDc::computeRe(const MacroParam& param)
 {
     rE_s = K_BOLTZMANN * param.t / Mixture::mass(0);
 }
-void tc_2::EnergyDc::computeTe(const MacroParam& param)
+void EnergyDc::computeTe(const MacroParam& param)
 {
     tE_s = 1.5 * K_BOLTZMANN * param.t * (param.rho[0] / Mixture::mass(0) +
             param.rho[1] / Mixture::mass(1)) / (param.rho[0] + param.rho[1]);
 }
-void tc_2::EnergyDc::computeFullE(const MacroParam& param)
+void EnergyDc::computeFullE(const MacroParam& param)
 {
     fullE_s = tE_s + param.rho[0] / (param.rho[0] + param.rho[1]) *
             (rE_s + vE12_s + vE3_s);
-    // + (param.rho[0] + param.rho[1]) * qPow(param.v, 2.0) / 2.0;
 }
 
 // Инициализация
-void tc_2::EnergyDc::initialize()
+void EnergyDc::initialize()
 {
     // Предварительная инициализация
-    tc_2::Energy::initialize();
+    Energy::initialize();
     heat_.initialize();
 }
 
 // Расчет всех значений
-void tc_2::EnergyDc::compute(const MacroParam& param)
+void EnergyDc::compute(const MacroParam& param)
 {
     // Порядок имеет значение
     heat_.compute(param.t12, param.t3);
@@ -385,14 +384,14 @@ void tc_2::EnergyDc::compute(const MacroParam& param)
     computeTe(param);
     computeFullE(param);
 }
-void tc_2::EnergyDc::compute(const double& t12, const double& t3)
+void EnergyDc::compute(const double& t12, const double& t3)
 {
     // Порядок имеет значение
     heat_.compute(t12, t3);
     computeVe12(t12);
     computeVe3(t3);
 }
-const tc_2::SpecificHeat& tc_2::EnergyDc::heat() const
+const SpecificHeat& EnergyDc::heat() const
 {
     return heat_;
 }
@@ -402,7 +401,7 @@ const tc_2::SpecificHeat& tc_2::EnergyDc::heat() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Выделение памяти, обновление значений
-void tc_2::Temperature::initialize()
+void Temperature::initialize()
 {
     vT12_s = 0.0;
     vT3_s = 0.0;
@@ -410,15 +409,15 @@ void tc_2::Temperature::initialize()
 }
 
 // Доступ к соответствующим полям
-const double& tc_2::Temperature::T12() const
+const double& Temperature::T12() const
 {
     return vT12_s;
 }
-const double& tc_2::Temperature::T3() const
+const double& Temperature::T3() const
 {
     return vT3_s;
 }
-const double& tc_2::Temperature::T() const
+const double& Temperature::T() const
 {
     return tT_s;
 }
@@ -428,7 +427,7 @@ const double& tc_2::Temperature::T() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Расчет всех значений температуры
-void tc_2::TemperatureNDc::calcT12(const double& e12)
+void TemperatureNDc::calcT12(const double& e12)
 {
     int num = 0;
     while ((vE12_v[num] < e12) && (num < vE12_v.size()))
@@ -438,7 +437,7 @@ void tc_2::TemperatureNDc::calcT12(const double& e12)
     vT12_s = vT12_v[num - 1] + dT * (e12 - vE12_v[num - 1]) /
             (vE12_v[num] - vE12_v[num - 1]);
 }
-void tc_2::TemperatureNDc::calcT3(const double& e3)
+void TemperatureNDc::calcT3(const double& e3)
 {
     int num = 0;
     while ((vE3_v[num] < e3) && (num < vE3_v.size()))
@@ -448,8 +447,8 @@ void tc_2::TemperatureNDc::calcT3(const double& e3)
     vT3_s = vT3_v[num - 1] + dT * (e3 - vE3_v[num - 1]) /
             (vE3_v[num] - vE3_v[num - 1]);
 }
-void tc_2::TemperatureNDc::calcT(const MacroParam& p, const double& e,
-                                 const double& e12, const double& e3)
+void TemperatureNDc::calcT(const MacroParam& p, const double& e,
+                           const double& e12, const double& e3)
 {
     tT_s = ((p.rho[0] + p.rho[1]) * e - p.rho[0] * (e12 + e3)) /
             K_BOLTZMANN / (2.5 * p.rho[0] / Mixture::mass(0) +
@@ -457,8 +456,8 @@ void tc_2::TemperatureNDc::calcT(const MacroParam& p, const double& e,
 }
 
 // Выделение памяти, обновление значений
-void tc_2::TemperatureNDc::initialize(const double& t0, const double& t1,
-                                      const int& n)
+void TemperatureNDc::initialize(const double& t0, const double& t1,
+                                const int& n)
 {
     Temperature::initialize();
     vT12_v.fill(0.0, n);
@@ -467,7 +466,7 @@ void tc_2::TemperatureNDc::initialize(const double& t0, const double& t1,
     vE3_v.fill(0.0, n);
 
     // Подготовка инструментов
-    double dT = (t1 - t0) / n;
+    dT = (t1 - t0) / n;
     MacroParam p;
     EnergyDc energy;
     energy.initialize();
@@ -487,8 +486,8 @@ void tc_2::TemperatureNDc::initialize(const double& t0, const double& t1,
 }
 
 // Расчет всех значений
-void tc_2::TemperatureNDc::compute(const MacroParam& param, const double& e12,
-                                   const double& e3, const double& e)
+void TemperatureNDc::compute(const MacroParam& param, const double& e12,
+                             const double& e3, const double& e)
 {
     calcT12(e12);
     calcT3(e3);
@@ -497,10 +496,10 @@ void tc_2::TemperatureNDc::compute(const MacroParam& param, const double& e12,
 
 ///////////////////////////////////////////////////////////////////////////////
 /// class BracketIntegrals
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 // Инициализация
-void tc_2::BracketIntegrals::initialize()
+void BracketIntegrals::initialize()
 {
     // Подгонка размеров столбцов матриц
     lambda_vv.resize(N_SORTS);
@@ -529,43 +528,43 @@ void tc_2::BracketIntegrals::initialize()
 }
 
 // Доступ к соответствующим полям
-const QVector<QVector<double>>& tc_2::BracketIntegrals::lambda() const
+const QVector<QVector<double>>& BracketIntegrals::lambda() const
 {
     return lambda_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::lambda00() const
+const QVector<QVector<double>>& BracketIntegrals::lambda00() const
 {
     return lambda00_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::lambda01() const
+const QVector<QVector<double>>& BracketIntegrals::lambda01() const
 {
     return lambda01_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::lambda11() const
+const QVector<QVector<double>>& BracketIntegrals::lambda11() const
 {
     return lambda11_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::eta() const
+const QVector<QVector<double>>& BracketIntegrals::eta() const
 {
     return eta_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::h00() const
+const QVector<QVector<double>>& BracketIntegrals::h00() const
 {
     return h00_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::beta11() const
+const QVector<QVector<double>>& BracketIntegrals::beta11() const
 {
     return beta11_vv;
 }
-const QVector<QVector<double>>& tc_2::BracketIntegrals::beta01() const
+const QVector<QVector<double>>& BracketIntegrals::beta01() const
 {
     return beta01_vv;
 }
-const QVector<double>& tc_2::BracketIntegrals::beta0011() const
+const QVector<double>& BracketIntegrals::beta0011() const
 {
     return beta0011_v;
 }
-const QVector<double>& tc_2::BracketIntegrals::lambdaInt() const
+const QVector<double>& BracketIntegrals::lambdaInt() const
 {
     return lambdaInt_v;
 }
@@ -575,7 +574,7 @@ const QVector<double>& tc_2::BracketIntegrals::lambdaInt() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Расчет phi
-void tc_2::BracketIntegralsDc::computePhi(const double& t)
+void BracketIntegralsDc::computePhi(const double& t)
 {
     phi_v[0] = K_BOLTZMANN / 23.73 *
             (1.0 + qPow(M_PI, 1.5) / 2.0 * qSqrt(Mixture::epsilon(0) / t) +
@@ -584,7 +583,7 @@ void tc_2::BracketIntegralsDc::computePhi(const double& t)
 }
 
 // Расчет всех интегральных скобок
-void tc_2::BracketIntegralsDc::computeBrackets1(const double& t)
+void BracketIntegralsDc::computeBrackets1(const double& t)
 {
     for (int i = 0; i < N_SORTS; ++i)
     {
@@ -597,8 +596,8 @@ void tc_2::BracketIntegralsDc::computeBrackets1(const double& t)
         }
     }
 }
-void tc_2::BracketIntegralsDc::computeBrackets2(const double& t,
-                                                const QVector<double>& x)
+void BracketIntegralsDc::computeBrackets2(const double& t,
+                                          const QVector<double>& x)
 {
     for (int i = 0; i < N_SORTS; ++i)
     {
@@ -684,8 +683,8 @@ void tc_2::BracketIntegralsDc::computeBrackets2(const double& t,
         }
     }
 }
-void tc_2::BracketIntegralsDc::computeBrackets3(const double& t,
-                                                const QVector<double>& x)
+void BracketIntegralsDc::computeBrackets3(const double& t,
+                                          const QVector<double>& x)
 {
     for (int i = 0; i < N_POLYATOMIC_SORTS; ++i)
     {
@@ -725,10 +724,10 @@ void tc_2::BracketIntegralsDc::computeBrackets3(const double& t,
 }
 
 // Инициализация
-void tc_2::BracketIntegralsDc::initialize()
+void BracketIntegralsDc::initialize()
 {
     // Предварительная инициализация
-    tc_2::BracketIntegrals::initialize();
+    BracketIntegrals::initialize();
     omega_.initialize();
 
     // Подготовка массива Phi
@@ -736,7 +735,7 @@ void tc_2::BracketIntegralsDc::initialize()
 }
 
 // Расчет всех значений
-void tc_2::BracketIntegralsDc::compute(const MacroParam& param)
+void BracketIntegralsDc::compute(const MacroParam& param)
 {
     // Мольная доля
     QVector<double> n = {param.rho[0] / Mixture::mass(0),
@@ -751,7 +750,7 @@ void tc_2::BracketIntegralsDc::compute(const MacroParam& param)
     computeBrackets2(param.t, x);
     computeBrackets3(param.t, x);
 }
-const tc_2::OmegaIntegrals& tc_2::BracketIntegralsDc::omega() const
+const OmegaIntegrals& BracketIntegralsDc::omega() const
 {
     return omega_;
 }
@@ -761,7 +760,7 @@ const tc_2::OmegaIntegrals& tc_2::BracketIntegralsDc::omega() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Выделение памяти, обновление значений
-void tc_2::TransportCoefficients::initialize()
+void TransportCoefficients::initialize()
 {
     // Обнуление значений
     sViscosity_s = 0.0;
@@ -782,39 +781,39 @@ void tc_2::TransportCoefficients::initialize()
 }
 
 // Доступ к соответствующим полям
-const double& tc_2::TransportCoefficients::sViscosity() const
+const double& TransportCoefficients::sViscosity() const
 {
     return sViscosity_s;
 }
-const double& tc_2::TransportCoefficients::bViscosity() const
+const double& TransportCoefficients::bViscosity() const
 {
     return bViscosity_s;
 }
-const double& tc_2::TransportCoefficients::tLambda() const
+const double& TransportCoefficients::tLambda() const
 {
     return tLambda_s;
 }
-const double& tc_2::TransportCoefficients::rLambda() const
+const double& TransportCoefficients::rLambda() const
 {
     return rLambda_s;
 }
-const double& tc_2::TransportCoefficients::cLambda() const
+const double& TransportCoefficients::cLambda() const
 {
     return cLambda_s;
 }
-const double& tc_2::TransportCoefficients::vLambdaT12() const
+const double& TransportCoefficients::vLambdaT12() const
 {
     return vLambdaT12_s;
 }
-const double& tc_2::TransportCoefficients::vLambdaT3() const
+const double& TransportCoefficients::vLambdaT3() const
 {
     return vLambdaT3_s;
 }
-const QVector<QVector<double>>& tc_2::TransportCoefficients::diffusion() const
+const QVector<QVector<double>>& TransportCoefficients::diffusion() const
 {
     return diffusion_vv;
 }
-const QVector<double>& tc_2::TransportCoefficients::tDiffusion() const
+const QVector<double>& TransportCoefficients::tDiffusion() const
 {
     return tDiffusion_v;
 }
@@ -824,9 +823,9 @@ const QVector<double>& tc_2::TransportCoefficients::tDiffusion() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Заполнение матриц систем и матриц свободных членов
-void tc_2::TransportCoefficientsDc::fillBMLambda(const double& nTot,
-                                                 const double& rho,
-                                                 const QVector<double>& x)
+void TransportCoefficientsDc::fillBMLambda(const double& nTot,
+                                           const double& rho,
+                                           const QVector<double>& x)
 {
     // Заполняем матрицу системы
     for (int i = 0; i < N_SORTS; ++i)
@@ -876,9 +875,9 @@ void tc_2::TransportCoefficientsDc::fillBMLambda(const double& nTot,
         bLambda_vv[i][0] = 4.0 / 5.0 / K_BOLTZMANN * x[i - N_SORTS];
     }
 }
-void tc_2::TransportCoefficientsDc::fillBMDiffusion(const double& nTot,
-                                                    const double& rho,
-                                                    const QVector<double>& x)
+void TransportCoefficientsDc::fillBMDiffusion(const double& nTot,
+                                              const double& rho,
+                                              const QVector<double>& x)
 {
     // Вспомогательные переменные
     double delta = 0.0;
@@ -911,8 +910,8 @@ void tc_2::TransportCoefficientsDc::fillBMDiffusion(const double& nTot,
         bDiffusion_vv[0][i] = 0.0;
     }
 }
-void tc_2::TransportCoefficientsDc::fillBMSViscosity(const double& t,
-                                                     const QVector<double>& x)
+void TransportCoefficientsDc::fillBMSViscosity(const double& t,
+                                               const QVector<double>& x)
 {
     // Заполняем матрицу системы
     for (int i = 0; i < N_SORTS; ++i)
@@ -929,9 +928,9 @@ void tc_2::TransportCoefficientsDc::fillBMSViscosity(const double& t,
         bSViscosity_vv[i][0] = 2.0 / K_BOLTZMANN / t * x[i];
     }
 }
-void tc_2::TransportCoefficientsDc::fillBMBViscosity(const double& nTot,
-                                                     const double& rho,
-                                                     const QVector<double>& x)
+void TransportCoefficientsDc::fillBMBViscosity(const double& nTot,
+                                               const double& rho,
+                                               const QVector<double>& x)
 {
     // Вспомогательные переменные
     double cu = 0.0;
@@ -995,8 +994,8 @@ void tc_2::TransportCoefficientsDc::fillBMBViscosity(const double& nTot,
 }
 
 // Решение СЛУ методом Гаусса
-void tc_2::TransportCoefficientsDc::gauss(QVector<QVector<double>>& m,
-                                          QVector<QVector<double>>& b)
+void TransportCoefficientsDc::gauss(QVector<QVector<double>>& m,
+                                    QVector<QVector<double>>& b)
 {
     // Вспомогательные переменные
     double big = 0.0;
@@ -1093,7 +1092,7 @@ void tc_2::TransportCoefficientsDc::gauss(QVector<QVector<double>>& m,
     {
         if (indexRow_v[mSize - l] != indexColumn_v[mSize - l])
         {
-            for (int k = 0; k < mSize; --k)
+            for (int k = 0; k < mSize; ++k)
             {
                 temp = m[k][indexRow_v[mSize - l]];
                 m[k][indexRow_v[mSize - l]] = m[k][indexColumn_v[mSize - l]];
@@ -1104,9 +1103,9 @@ void tc_2::TransportCoefficientsDc::gauss(QVector<QVector<double>>& m,
 }
 
 // Расчет всех коэффициентов переноса, базируясь на решении СЛУ
-void tc_2::TransportCoefficientsDc::computeTransport(const double& t,
-                                                     const double& nTot,
-                                                     const QVector<double>& x)
+void TransportCoefficientsDc::computeTransport(const double& t,
+                                               const double& nTot,
+                                               const QVector<double>& x)
 {
     // Коэффициенты термодиффузии
     for (int i = 0; i < N_SORTS; ++i)
@@ -1154,10 +1153,10 @@ void tc_2::TransportCoefficientsDc::computeTransport(const double& t,
 }
 
 // Выделение памяти, обновление значений
-void tc_2::TransportCoefficientsDc::initialize()
+void TransportCoefficientsDc::initialize()
 {
     // Предварительная инициализация
-    tc_2::TransportCoefficients::initialize();
+    TransportCoefficients::initialize();
     heat_.initialize();
     bracket_.initialize();
 
@@ -1197,7 +1196,7 @@ void tc_2::TransportCoefficientsDc::initialize()
 }
 
 // Расчет всех значений
-void tc_2::TransportCoefficientsDc::compute(const MacroParam& param)
+void TransportCoefficientsDc::compute(const MacroParam& param)
 {
     // Мольная доля
     QVector<double> n = {param.rho[0] / Mixture::mass(0),
@@ -1226,11 +1225,11 @@ void tc_2::TransportCoefficientsDc::compute(const MacroParam& param)
     // Вычисление коэффициентов переноса
     computeTransport(param.t, nTot, x);
 }
-const tc_2::SpecificHeat& tc_2::TransportCoefficientsDc::heat() const
+const SpecificHeat& TransportCoefficientsDc::heat() const
 {
     return heat_;
 }
-const tc_2::BracketIntegrals& tc_2::TransportCoefficientsDc::bracket() const
+const BracketIntegrals& TransportCoefficientsDc::bracket() const
 {
     return bracket_;
 }
@@ -1240,7 +1239,7 @@ const tc_2::BracketIntegrals& tc_2::TransportCoefficientsDc::bracket() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Выделение памяти, обновление значений
-void tc_2::FlowMembers::initialize()
+void FlowMembers::initialize()
 {
     trQ_s = 0.0;
     vQ12_s = 0.0;
@@ -1255,43 +1254,43 @@ void tc_2::FlowMembers::initialize()
 }
 
 // Доступ к соответствующим полям
-const double &tc_2::FlowMembers::trQ() const
+const double &FlowMembers::trQ() const
 {
     return trQ_s;
 }
-const double &tc_2::FlowMembers::vQ12() const
+const double &FlowMembers::vQ12() const
 {
     return vQ12_s;
 }
-const double &tc_2::FlowMembers::vQ3() const
+const double &FlowMembers::vQ3() const
 {
     return vQ3_s;
 }
-const double &tc_2::FlowMembers::diffQ() const
+const double &FlowMembers::diffQ() const
 {
     return diffQ_s;
 }
-const double &tc_2::FlowMembers::fullQ() const
+const double &FlowMembers::fullQ() const
 {
     return fullQ_s;
 }
-const double &tc_2::FlowMembers::xxP() const
+const double &FlowMembers::xxP() const
 {
     return xxP_s;
 }
-const QVector<double> &tc_2::FlowMembers::h() const
+const QVector<double> &FlowMembers::h() const
 {
     return h_v;
 }
-const QVector<double> &tc_2::FlowMembers::diffV() const
+const QVector<double> &FlowMembers::diffV() const
 {
     return diffV_v;
 }
-const QVector<double> &tc_2::FlowMembers::d() const
+const QVector<double> &FlowMembers::d() const
 {
     return d_v;
 }
-const QVector<double> &tc_2::FlowMembers::flow() const
+const QVector<double> &FlowMembers::flow() const
 {
     return flow_v;
 }
@@ -1301,9 +1300,9 @@ const QVector<double> &tc_2::FlowMembers::flow() const
 ///////////////////////////////////////////////////////////////////////////////
 
 // Расчет соответствующих потоков энергии, энтальпии, компоненты тензора
-void tc_2::FlowMembersDc::computeD(const MacroParam& param,
-                                   const QVector<double>& dx_dx,
-                                   const double& dp_dx)
+void FlowMembersDc::computeD(const MacroParam& param,
+                             const QVector<double>& dx_dx,
+                             const double& dp_dx)
 {
     QVector<double> n = {param.rho[0] / Mixture::mass(0),
                          param.rho[1] / Mixture::mass(1)};
@@ -1313,8 +1312,7 @@ void tc_2::FlowMembersDc::computeD(const MacroParam& param,
                 (param.rho[0] + param.rho[1])) / param.p * dp_dx;
     }
 }
-void tc_2::FlowMembersDc::computeDiffV(const MacroParam& param,
-                                       const double& dT_dx)
+void FlowMembersDc::computeDiffV(const MacroParam& param, const double& dT_dx)
 {
     for (int i = 0; i < N_SORTS; ++i)
     {
@@ -1325,13 +1323,13 @@ void tc_2::FlowMembersDc::computeDiffV(const MacroParam& param,
         }
     }
 }
-void tc_2::FlowMembersDc::computeH(const MacroParam& param)
+void FlowMembersDc::computeH(const MacroParam& param)
 {
     h_v[0] = 2.5 * K_BOLTZMANN * param.t / Mixture::mass(0) + energy_.rE() +
             energy_.vE12() + energy_.vE3();
     h_v[1] = 2.5 * K_BOLTZMANN * param.t / Mixture::mass(1);
 }
-void tc_2::FlowMembersDc::computeDiffQ(const MacroParam& param)
+void FlowMembersDc::computeDiffQ(const MacroParam& param)
 {
     diffQ_s = 0.0;
     for (int i = 0; i < N_SORTS; ++i)
@@ -1340,24 +1338,22 @@ void tc_2::FlowMembersDc::computeDiffQ(const MacroParam& param)
                 param.p * d_v[i] * transport_.tDiffusion()[i];
     }
 }
-void tc_2::FlowMembersDc::computeFullQ(const double& dT_dx,
-                                       const double& dT12_dx,
-                                       const double& dT3_dx)
+void FlowMembersDc::computeFullQ(const double& dT_dx, const double& dT12_dx,
+                                 const double& dT3_dx)
 {
     trQ_s = -transport_.cLambda() * dT_dx;
     vQ12_s = -transport_.vLambdaT12() * dT12_dx;
     vQ3_s = -transport_.vLambdaT3() * dT3_dx;
     fullQ_s = trQ_s + vQ12_s + vQ3_s + diffQ_s;
 }
-void tc_2::FlowMembersDc::computeXxP(const MacroParam& param,
-                                     const double& dv_dx)
+void FlowMembersDc::computeXxP(const MacroParam& param, const double& dv_dx)
 {
     xxP_s = param.p - (4.0 / 3.0 * transport_.sViscosity() +
                        transport_.bViscosity()) * dv_dx;
 }
 
 // Выделение памяти, обновление значений
-void tc_2::FlowMembersDc::initialize()
+void FlowMembersDc::initialize()
 {
     // Предварительная инициализация
     FlowMembers::initialize();
@@ -1366,15 +1362,14 @@ void tc_2::FlowMembersDc::initialize()
 }
 
 // Расчет всех значений
-void tc_2::FlowMembersDc::compute(const MacroParam& param,
-                                  const QVector<double>& dx_dx,
-                                  const double& dp_dx, const double& dT_dx,
-                                  const double& dT12_dx, const double& dT3_dx,
-                                  const double& dv_dx)
+void FlowMembersDc::compute(const MacroParam& param,
+                            const QVector<double>& dx_dx, const double& dp_dx,
+                            const double& dT_dx, const double& dT12_dx,
+                            const double& dT3_dx, const double& dv_dx)
 {
     // Подготовка данных
     energy_.compute(param);
-    transport_.compute(param);
+    transport_.compute(param); // ERROR
     computeD(param, dx_dx, dp_dx);
     computeDiffV(param, dT_dx);
     computeH(param);
@@ -1385,19 +1380,18 @@ void tc_2::FlowMembersDc::compute(const MacroParam& param,
     // Расчет вектора поточных членов
     flow_v[0] = param.rho[0] * (param.v + diffV_v[0]);
     flow_v[1] = param.rho[1] * (param.v + diffV_v[1]);
-    flow_v[2] = (param.rho[0] + param.rho[1]) * qPow(param.v, 2.0) +
-            param.p - xxP_s;
-    flow_v[3] = param.v * ((param.rho[0] + param.rho[1]) *
-            (energy_.fullE() + qPow(param.v, 2.0) / 2.0) + param.p) +
-            fullQ_s - param.v * xxP_s;
+    flow_v[2] = (param.rho[0] + param.rho[1]) * qPow(param.v, 2.0) + xxP_s;
+    flow_v[3] = param.v * (param.rho[0] + param.rho[1]) *
+            (energy_.fullE() + qPow(param.v, 2.0) / 2.0) +
+            fullQ_s + param.v * xxP_s;
     flow_v[4] = param.v * param.rho[0] * energy_.vE12() + vQ12_s;
     flow_v[5] = param.v * param.rho[0] * energy_.vE3() + vQ3_s;
 }
-const tc_2::Energy& tc_2::FlowMembersDc::energy() const
+const Energy& FlowMembersDc::energy() const
 {
     return energy_;
 }
-const tc_2::TransportCoefficients& tc_2::FlowMembersDc::transport() const
+const TransportCoefficients& FlowMembersDc::transport() const
 {
     return transport_;
 }
