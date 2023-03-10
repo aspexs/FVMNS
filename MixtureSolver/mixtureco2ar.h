@@ -3,15 +3,74 @@
 
 #include "transport_m_2.h"
 
+/// BorderCondition - инструмент расчета макропараметров за ударной волной.
+/// Требует информации о характеристиках потока перед УВ, использует для расчета
+/// законы сохранения.
+class BorderCondition
+{
+public:
+
+    // Находит равновесные макропараметры за УВ
+    void compute(const MacroParam& lP);
+
+    // Возвращает равновесные макропараметры за УВ
+    const MacroParam& rP() const;
+
+private:
+
+    // Макропараметры перед УВ и за УВ соответственно
+    MacroParam lP_, rP_;
+
+    // Иструмент расчета энергий
+    EnergyDc energy_;
+
+    // Общая энергия, массовые доли CO2 и Ar перед УВ соответственно
+    double lE_, y0_, y1_, lRho_;
+
+    // Вспомогательные величины
+    double alpha_;
+
+private:
+
+    // Расчет вспомогательных величин
+    void initialize(const MacroParam& lP);
+
+    // Возвращает дискриминант
+    double computeD(const double& t);
+
+    // Возвращает плотность смеси по температуре
+    double computeRho(const double& t);
+
+    // Функция для нахождения равновесной температуры за УВ: F(T_eq) = 0
+    double computeF(const double& t);
+
+    // Находит равновесную температуру за УВ методом бисекции
+    void computeT();
+
+    // Находит равновесное давление за УВ
+    void computeP();
+
+    // Находит равновесные значения плотностей сортов за УВ
+    void computeRho();
+
+    // Находит равновесную скорость потока за УВ
+    void computeV();
+};
+
 /// MixtureCo2Ar - предоставляет инструменты для решения задачи о
 /// релаксационных процессах за ударной волной в смеси CO2-Ar
 class MixtureCo2Ar
 {
 public:
 
+    // Шаг по времени, абсолютное max изменение потоков
+    double dt, errMax;
+
+public:
+
     MixtureCo2Ar();
 
-    void initialize(const SolverParams& init);
+    void initialize(const MacroParam& lP);
     void solve();
 
     QVector<QVector<double>> saveMacroParams();
@@ -27,13 +86,7 @@ private:
     QVector<int> parAll_v;
     QVector<int> parIn_v;
     TemperatureNDc computeT;
-
-    // Настройки решателя
-    SolverParams solParam;
-
-    // Шаг по времени, абсолютное суммарное изменение потоков
-    double dt    = 0.0;
-    double error = 0.0;
+    ProgressBar bar;
 
     // Все макропараметры течения во всех точках
     QVector<MacroParam> points;
@@ -69,9 +122,6 @@ private:
 
     // Рассчитывает временной шаг по критерию Куранта-Фридрихса-Леви
     void updateDt();
-
-    // Обновляет условие на границе за ударной волной
-    void updateBoundCond();
 };
 
 #endif // MIXTURECO2AR_H

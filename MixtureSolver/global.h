@@ -9,6 +9,27 @@
 #include <QMutexLocker>
 #include <QFutureWatcher>
 #include <QtConcurrent>
+#include <iostream>
+
+// Настройка используемых коэффицентов
+#define USE_V_DIFF 1
+#define USE_B_VISC 1
+
+// Настройка температурного диапазона
+#define T_MAX 5000.0
+#define T_MIN 200.0
+#define T_NUM 9600
+
+// Малая величина
+#define EPSILON 1e-6
+
+// Число ячеек сетки решателя, число итераций
+#define N_CELL 50
+#define N_ITER 5000
+
+// Число Куранта и длина одной ячейки
+#define CFL 0.9
+#define DX 0.0005
 
 // Постоянная Больцмана
 #define K_BOLTZMANN 1.3805e-23
@@ -36,7 +57,7 @@
 #define N_VIBR_L3 40
 
 // Энергия диссоциации : CO2
-#define DISS_ENERGY 64017
+#define DISS_ENERGY 64017.0
 
 // Настройка метода Гаусса
 #define N_MAX 30
@@ -66,40 +87,51 @@ public:
 };
 
 // Основные макропараметры (rho[0] -> CO2, rho[1] -> Ar)
-struct MacroParam
+class MacroParam
 {
+public:
+
     // Основные макропараметры (не независимые)
     QVector<double> rho = {0.0, 0.0};
-    double p    = 0.0;
-    double v    = 0.0;
-    double t    = 0.0;
-    double t12  = 0.0;
-    double t3   = 0.0;
+    double p, v, t, t12, t3;
+
+public:
+
+
+    // Инициализация по умолчанию и для равновесного случая
+    MacroParam();
+    MacroParam(const double& p, const double& v, const double& t,
+               const double& x_CO2);
 
     // Инициализация плотностей, зная {p, t, x_CO2 in [0, 1]}
     void computeRho(const double& x_CO2);
+
+    // Инициализация для равновесного случая
+    void initialize(const double& p, const double& v, const double& t,
+                    const double& x_CO2);
+
+    // Продолжение по гладкости
+    MacroParam proceed(const MacroParam& p0);
 };
 
-// Параметры решателя
-struct SolverParams
+/// ProgressBar - реализует шкалу прогресса в консоли
+class ProgressBar
 {
-    // Условия перед УВ и за УВ
-    MacroParam lPoint;
-    MacroParam rPoint;
+public:
 
-    // Число внутренних ячеек и число итераций
-    int nCell = 40;
-    int nIter = 100;
+    // Текущее и предыдущее заполнение, шаг
+    double n0, n1, dx;
 
-    // Число Куранта и коэффициент сдвига давления
-    double cfl = 0.95;
-    double k   = 1e-3;
-    double dx  = 0.003;
+public:
 
-    // Настройки таблиц температур и энергий
-    double t_min = 200.0;
-    double t_max = 6000.0;
-    int    t_n   = 5800;
+    // Обнуление
+    ProgressBar();
+
+    // Инициализация для равновесного случая
+    void initialize(const double& n);
+
+    // Обновить шкалу
+    void update();
 };
 
 #endif // GLOBAL_H

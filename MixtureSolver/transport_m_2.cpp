@@ -429,23 +429,47 @@ const double& Temperature::T() const
 // Расчет всех значений температуры
 void TemperatureNDc::calcT12(const double& e12)
 {
-    int num = 0;
-    while ((vE12_v[num] < e12) && (num < vE12_v.size()))
+    // Вспомогательные переменные
+    int nL = 0;
+    int nR = vE12_v.size() - 1;
+    int n = 0;
+
+    // Двоичный поиск
+    while (nR - nL > 1)
     {
-        ++num;
+        n = 0.5 * (nL + nR);
+        if (vE12_v[n] > e12)
+        {
+            nR = n;
+        }
+        else
+        {
+            nL = n;
+        }
     }
-    vT12_s = vT12_v[num - 1] + dT * (e12 - vE12_v[num - 1]) /
-            (vE12_v[num] - vE12_v[num - 1]);
+    vT12_s = vT12_v[nL] + dT * (e12 - vE12_v[nL]) / (vE12_v[nR] - vE12_v[nL]);
 }
 void TemperatureNDc::calcT3(const double& e3)
 {
-    int num = 0;
-    while ((vE3_v[num] < e3) && (num < vE3_v.size()))
+    // Вспомогательные переменные
+    int nL = 0;
+    int nR = vE3_v.size() - 1;
+    int n = 0;
+
+    // Двоичный поиск
+    while (nR - nL > 1)
     {
-        ++num;
+        n = 0.5 * (nL + nR);
+        if (vE3_v[n] > e3)
+        {
+            nR = n;
+        }
+        else
+        {
+            nL = n;
+        }
     }
-    vT3_s = vT3_v[num - 1] + dT * (e3 - vE3_v[num - 1]) /
-            (vE3_v[num] - vE3_v[num - 1]);
+    vT3_s = vT3_v[nL] + dT * (e3 - vE3_v[nL]) / (vE3_v[nR] - vE3_v[nL]);
 }
 void TemperatureNDc::calcT(const MacroParam& p, const double& e,
                            const double& e12, const double& e3)
@@ -1349,7 +1373,7 @@ void FlowMembersDc::computeFullQ(const double& dT_dx, const double& dT12_dx,
 void FlowMembersDc::computeXxP(const MacroParam& param, const double& dv_dx)
 {
     xxP_s = param.p - (4.0 / 3.0 * transport_.sViscosity() +
-                       transport_.bViscosity()) * dv_dx;
+                       USE_B_VISC * transport_.bViscosity()) * dv_dx;
 }
 
 // Выделение памяти, обновление значений
@@ -1369,7 +1393,7 @@ void FlowMembersDc::compute(const MacroParam& param,
 {
     // Подготовка данных
     energy_.compute(param);
-    transport_.compute(param); // ERROR
+    transport_.compute(param);
     computeD(param, dx_dx, dp_dx);
     computeDiffV(param, dT_dx);
     computeH(param);
@@ -1378,8 +1402,8 @@ void FlowMembersDc::compute(const MacroParam& param,
     computeXxP(param, dv_dx);
 
     // Расчет вектора поточных членов
-    flow_v[0] = param.rho[0] * (param.v + diffV_v[0]);
-    flow_v[1] = param.rho[1] * (param.v + diffV_v[1]);
+    flow_v[0] = param.rho[0] * (param.v + USE_V_DIFF * diffV_v[0]);
+    flow_v[1] = param.rho[1] * (param.v + USE_V_DIFF * diffV_v[1]);
     flow_v[2] = (param.rho[0] + param.rho[1]) * qPow(param.v, 2.0) + xxP_s;
     flow_v[3] = param.v * (param.rho[0] + param.rho[1]) *
             (energy_.fullE() + qPow(param.v, 2.0) / 2.0) +

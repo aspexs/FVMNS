@@ -30,47 +30,21 @@ void writeToFile(const QString& name, const QVector<QVector<double>> table)
     file1.close();
 }
 
-SolverParams createParam(double p, double v, double t, double x_CO2,
-                         int nIter, double k)
-{
-    SolverParams param;
-
-    // Left point
-    param.lPoint.v   = v;
-    param.lPoint.t   = t;
-    param.lPoint.t12 = t;
-    param.lPoint.t3  = t;
-    param.lPoint.p   = p;
-    param.lPoint.computeRho(x_CO2);
-
-    // Right point
-    param.rPoint.t   = t;
-    param.rPoint.t12 = t;
-    param.rPoint.t3  = t;
-    param.rPoint.p   = 0.5 * (param.lPoint.rho[0] + param.lPoint.rho[1]) *
-            qPow(param.lPoint.v, 2.0) + param.lPoint.p;
-    param.rPoint.computeRho(x_CO2);
-    param.rPoint.v   = (param.lPoint.rho[0] + param.lPoint.rho[1]) *
-            param.lPoint.v / (param.rPoint.rho[0] + param.rPoint.rho[1]);
-
-    // Grid settings
-    param.nIter = nIter;
-    param.k = k;
-    return param;
-}
-
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     MixtureCo2Ar solver;
 
-    solver.initialize(createParam(1e3, 600, 300, 0.5, 1000, 2e-2));
+    solver.initialize(MacroParam(66.6, 1370, 300, 0.999));
     solver.solve();
     writeToFile("macro_params.txt", solver.saveMacroParams());
-    writeToFile("u.txt", solver.saveU());
-    writeToFile("f.txt", solver.saveF());
-    writeToFile("hlle_f.txt", solver.saveHlleF());
-    writeToFile("r.txt", solver.saveR());
+
+    std::cout << "\n > errMax : " << solver.errMax << '\n';
+
+//    writeToFile("u.txt", solver.saveU());
+//    writeToFile("f.txt", solver.saveF());
+//    writeToFile("hlle_f.txt", solver.saveHlleF());
+//    writeToFile("r.txt", solver.saveR());
 
     return 0;
 }
