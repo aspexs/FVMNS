@@ -425,6 +425,8 @@ debug/main.o: ../MixtureSolver/main.cpp C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/qsharedpointer.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/qshareddata.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/qsharedpointer_impl.h \
+		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/QString \
+		../MixtureSolver/mixtureco2ar.h \
 		../MixtureSolver/transport_m_2.h \
 		../MixtureSolver/global.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/QVector \
@@ -583,6 +585,7 @@ debug/main.o: ../MixtureSolver/main.cpp C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\main.o ..\MixtureSolver\main.cpp
 
 debug/mixtureco2ar.o: ../MixtureSolver/mixtureco2ar.cpp ../MixtureSolver/mixtureco2ar.h \
+		../MixtureSolver/transport_m_2.h \
 		../MixtureSolver/global.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/QVector \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtCore/qvector.h \
@@ -804,8 +807,7 @@ debug/mixtureco2ar.o: ../MixtureSolver/mixtureco2ar.cpp ../MixtureSolver/mixture
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtConcurrent/qtconcurrentrun.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtConcurrent/qtconcurrentrunbase.h \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtConcurrent/qtconcurrentstoredfunctioncall.h \
-		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtConcurrent/qtconcurrentversion.h \
-		../MixtureSolver/transport_m_2.h
+		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/include/QtConcurrent/qtconcurrentversion.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\mixtureco2ar.o ..\MixtureSolver\mixtureco2ar.cpp
 
 debug/transport_m_2.o: ../MixtureSolver/transport_m_2.cpp ../MixtureSolver/transport_m_2.h \

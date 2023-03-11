@@ -247,6 +247,7 @@ Makefile: ../MixtureSolver/MixtureSolver.pro C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mk
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/qt_config.prf \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/win32-g++/qmake.conf \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/exclusive_builds.prf \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/toolchain.prf \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/default_pre.prf \
@@ -271,7 +272,6 @@ Makefile: ../MixtureSolver/MixtureSolver.pro C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mk
 		../MixtureSolver/MixtureSolver.pro \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/lib/Qt5Concurrent.prl \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/lib/Qt5Core.prl \
-		.qmake.stash \
 		C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/build_pass.prf
 	$(QMAKE) -o Makefile ..\MixtureSolver\MixtureSolver.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/spec_pre.prf:
@@ -451,6 +451,7 @@ C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/qt_functions.prf:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/qt_config.prf:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/win32-g++/qmake.conf:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/spec_post.prf:
+.qmake.stash:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/exclusive_builds.prf:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/toolchain.prf:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/default_pre.prf:
@@ -475,7 +476,6 @@ C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/lex.prf:
 ../MixtureSolver/MixtureSolver.pro:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/lib/Qt5Concurrent.prl:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/lib/Qt5Core.prl:
-.qmake.stash:
 C:/Qt/Qt5.14.2/5.14.2/mingw73_32/mkspecs/features/build_pass.prf:
 qmake: FORCE
 	@$(QMAKE) -o Makefile ..\MixtureSolver\MixtureSolver.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"

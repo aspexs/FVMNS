@@ -16,20 +16,20 @@
 #define USE_B_VISC 1
 
 // Настройка температурного диапазона
-#define T_MAX 5000.0
+#define T_MAX 3000.0
 #define T_MIN 200.0
-#define T_NUM 9600
+#define T_NUM 5600
 
 // Малая величина
-#define EPSILON 1e-6
+#define EPSILON 1e-10
 
 // Число ячеек сетки решателя, число итераций
 #define N_CELL 50
-#define N_ITER 5000
+#define N_ITER 500
 
 // Число Куранта и длина одной ячейки
 #define CFL 0.9
-#define DX 0.0005
+#define DX  0.0005
 
 // Постоянная Больцмана
 #define K_BOLTZMANN 1.3805e-23
@@ -92,7 +92,7 @@ class MacroParam
 public:
 
     // Основные макропараметры (не независимые)
-    QVector<double> rho = {0.0, 0.0};
+    QVector<double> rho;
     double p, v, t, t12, t3;
 
 public:

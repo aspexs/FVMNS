@@ -91,6 +91,7 @@ MacroParam::MacroParam()
 MacroParam::MacroParam(const double& p, const double& v, const double& t,
                        const double& x_CO2)
 {
+    rho = {0.0, 0.0};
     initialize(p, v, t, x_CO2);
 }
 
