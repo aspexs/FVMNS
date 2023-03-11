@@ -81,17 +81,17 @@ double Mixture::tauVVCO2(const double& t, const double& p)
 MacroParam::MacroParam()
 {
     rho = {0.0, 0.0};
-    p    = 0.0;
-    v    = 0.0;
-    t    = 0.0;
-    t12  = 0.0;
-    t3   = 0.0;
+    p   = 0.0;
+    v   = 0.0;
+    t   = 0.0;
+    t12 = 0.0;
+    t3  = 0.0;
 }
 
 MacroParam::MacroParam(const double& p, const double& v, const double& t,
                        const double& x_CO2)
 {
-    rho = {0.0, 0.0};
+    this->rho = {0.0, 0.0};
     initialize(p, v, t, x_CO2);
 }
 

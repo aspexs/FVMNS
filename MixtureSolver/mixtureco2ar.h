@@ -63,8 +63,11 @@ class MixtureCo2Ar
 {
 public:
 
-    // Шаг по времени, абсолютное max изменение потоков
-    double dt, errMax;
+    // Шаг по времени, суммарное абсолютное изменение вектора конс. переменных
+    double dt, error;
+
+    // Хранит номер последней итерации
+    int currIter;
 
 public:
 
@@ -86,7 +89,9 @@ private:
     QVector<int> parAll_v;
     QVector<int> parIn_v;
     TemperatureNDc computeT;
-    ProgressBar bar;
+
+    // Флаг выхода из итерационного процесса
+    bool notFinished;
 
     // Все макропараметры течения во всех точках
     QVector<MacroParam> points;

@@ -39,12 +39,8 @@ int main(int argc, char *argv[])
     solver.solve();
     writeToFile("macro_params.txt", solver.saveMacroParams());
 
-    std::cout << "\n > errMax : " << solver.errMax << '\n';
-
-//    writeToFile("u.txt", solver.saveU());
-//    writeToFile("f.txt", solver.saveF());
-//    writeToFile("hlle_f.txt", solver.saveHlleF());
-//    writeToFile("r.txt", solver.saveR());
-
+    std::cout << "\n > Error      : " << solver.error;
+    std::cout << "\n > Iterations : " << solver.currIter << " / " <<
+                 MAX_N_ITER << '\n';
     return 0;
 }

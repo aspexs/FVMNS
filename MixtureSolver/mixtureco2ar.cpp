@@ -120,6 +120,11 @@ void BorderCondition::computeV()
 
 MixtureCo2Ar::MixtureCo2Ar()
 {
+    error = 0.0;
+    dt = 0.0;
+    currIter = 0;
+    notFinished = true;
+
     U.resize(SYSTEM_ORDER);
     F.resize(SYSTEM_ORDER);
     R.resize(SYSTEM_ORDER);
@@ -197,10 +202,10 @@ void MixtureCo2Ar::solve()
 {
     // Готовим progress bar
     ProgressBar bar;
-    bar.initialize(N_ITER);
+    bar.initialize(MAX_N_ITER);
 
-    // Осуществляем фиксированное кол-во шагов метода
-    for (int i = 0; i < N_ITER; ++i)
+    // Осуществляем итерационный процесс
+    while (currIter < MAX_N_ITER && notFinished)
     {
         // Обновляем показатель адиабаты, скорость звука, временной шаг
         updateAK();
@@ -219,6 +224,7 @@ void MixtureCo2Ar::solve()
 
         // Обновляем progress bar
         bar.update();
+        ++currIter;
     }
     updateAK();
 }
@@ -341,24 +347,25 @@ void MixtureCo2Ar::computeHlleF()
 void MixtureCo2Ar::step()
 {
     // Инициализация
-    double dF = 0.0;
-    errMax = 0.0;
+    double dU = 0.0;
+    double max = 0.0;
 
     // Находим ошибку, обновляем вектор консервативных переменных
     for (int j = 0; j < SYSTEM_ORDER; ++j)
     {
         for (int i = 1; i < N_CELL + 1; ++i)
         {
-            dF = (hlleF[j][i] - hlleF[j][i - 1]) / DX * dt;
-            U[j][i] += dt * R[j][i] - dF;
+            dU = (R[j][i] - (hlleF[j][i] - hlleF[j][i - 1]) / DX) * dt;
+            U[j][i] += dU;
 
             // Находим наибольшее абсолютное отклонение
-            if (qAbs(dF) > errMax)
-            {
-                errMax = qAbs(dF);
-            }
+            max += qAbs(dU);
         }
     }
+
+    // Проверка на выход из цикла
+    notFinished = (qAbs(error - max) > DELTA_ERROR) || (currIter == 0);
+    error = max;
 }
 
 void MixtureCo2Ar::computeR()
@@ -474,18 +481,19 @@ void MixtureCo2Ar::updateDt()
 QVector<QVector<double>> MixtureCo2Ar::saveMacroParams()
 {
     QVector<QVector<double>> table;
-    table.resize(9);
+    table.resize(10);
     for (int i = 0; i < N_CELL + 2; ++i)
     {
-        table[0].push_back(points[i].rho[0]);
-        table[1].push_back(points[i].rho[1]);
-        table[2].push_back(points[i].p);
-        table[3].push_back(points[i].v);
-        table[4].push_back(points[i].t);
-        table[5].push_back(points[i].t12);
-        table[6].push_back(points[i].t3);
-        table[7].push_back(k[i]);
-        table[8].push_back(a[i]);
+        table[0].push_back(DX * i);
+        table[1].push_back(points[i].rho[0]);
+        table[2].push_back(points[i].rho[1]);
+        table[3].push_back(points[i].p);
+        table[4].push_back(points[i].v);
+        table[5].push_back(points[i].t);
+        table[6].push_back(points[i].t12);
+        table[7].push_back(points[i].t3);
+        table[8].push_back(k[i]);
+        table[9].push_back(a[i]);
     }
     return table;
 }

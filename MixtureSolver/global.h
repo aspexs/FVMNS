@@ -20,16 +20,17 @@
 #define T_MIN 200.0
 #define T_NUM 5600
 
-// Малая величина
+// Малые величины для оценки точности
 #define EPSILON 1e-10
+#define DELTA_ERROR 1e-8
 
 // Число ячеек сетки решателя, число итераций
 #define N_CELL 50
-#define N_ITER 500
+#define MAX_N_ITER 5e3
 
 // Число Куранта и длина одной ячейки
-#define CFL 0.9
-#define DX  0.0005
+#define CFL 0.5
+#define DX 0.0005
 
 // Постоянная Больцмана
 #define K_BOLTZMANN 1.3805e-23
