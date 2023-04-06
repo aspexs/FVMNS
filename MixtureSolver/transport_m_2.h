@@ -567,4 +567,30 @@ public:
     const TransportCoefficients& transport() const;
 };
 
+/// Класс, содержащий инструменты поиска времен колебательных релаксаций для
+/// смеси CO2-Ar
+class SolverCO2Ar
+{
+public:
+
+    // Времена VT и VV релаксации
+    static double tauVVCO2CO2(const double& t, const double& p);
+    static double tauVTCO2CO2(const double& t, const double& n_CO2);
+    static double tauVTCO2Ar(const double& t, const double& n_Ar);
+
+private:
+
+    // Вспомогательные методы
+    static double E_av_VT_CO2(double t);
+    static double E_av_VT_Ar(double t);
+    static double S_VT2_CO2_d(int i, int j, int k, double t);
+    static double S_VT2_Ar_d(int i, int j, int k, double t);
+    static double E_CO2(int i, int j, int k);
+    static double P_VT2_CO2_d(int i, int j, int k, double t);
+    static double P_VT2_Ar_d(int i, int j, int k, double t);
+    static double fsigm(double delta_E, double masRed, double alpha, double t);
+    static double ZvibrCO2(double t);
+    static double CvibrCO2(double t);
+};
+
 #endif // TRANSPORT_M_2_H

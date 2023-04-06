@@ -237,8 +237,7 @@ void SpecificHeatDc::computeCv(const double& t12, const double& t3)
             ee = Mixture::vEnergy(i, j, 0);
             if (ee < DISS_ENERGY * K_BOLTZMANN)
             {
-                ppp = g * qExp(-ee / K_BOLTZMANN / t12) /
-                        zvT12_s;
+                ppp = g * qExp(-ee / K_BOLTZMANN / t12) / zvT12_s;
                 s12 += ee / K_BOLTZMANN / t12 * ppp;
                 ss12 += qPow(ee / K_BOLTZMANN / t12, 2.0) * ppp;
             }
@@ -345,7 +344,7 @@ void EnergyDc::computeVe3(const double& t3)
         ee = Mixture::vEnergy(0, 0, k);
         if (ee < DISS_ENERGY * K_BOLTZMANN)
         {
-            vE3_s = vE3_s + ee * qExp(-ee / K_BOLTZMANN / t3);
+            vE3_s += ee * qExp(-ee / K_BOLTZMANN / t3);
         }
     }
     vE3_s *= 1.0 / (heat_.zvT3() * Mixture::mass(0));
@@ -447,6 +446,8 @@ void TemperatureNDc::calcT12(const double& e12)
             nL = n;
         }
     }
+
+    // Линейная интерполяция
     vT12_s = vT12_v[nL] + dT * (e12 - vE12_v[nL]) / (vE12_v[nR] - vE12_v[nL]);
 }
 void TemperatureNDc::calcT3(const double& e3)
@@ -469,6 +470,8 @@ void TemperatureNDc::calcT3(const double& e3)
             nL = n;
         }
     }
+
+    // Линейная интерполяция
     vT3_s = vT3_v[nL] + dT * (e3 - vE3_v[nL]) / (vE3_v[nR] - vE3_v[nL]);
 }
 void TemperatureNDc::calcT(const MacroParam& p, const double& e,
@@ -503,7 +506,7 @@ void TemperatureNDc::initialize(const double& t0, const double& t1,
         p.t3 = p.t12;
         energy.compute(p);
         vT12_v[i] = p.t12;
-        vT3_v[i] = p.t12;
+        vT3_v[i] = p.t3;
         vE12_v[i] = energy.vE12();
         vE3_v[i] = energy.vE3();
     }
@@ -1338,12 +1341,13 @@ void FlowMembersDc::computeD(const MacroParam& param,
 }
 void FlowMembersDc::computeDiffV(const MacroParam& param, const double& dT_dx)
 {
+    // TODO (+ или - ??)
     for (int i = 0; i < N_SORTS; ++i)
     {
-        diffV_v[i] = -transport_.tDiffusion()[i] / param.t * dT_dx;
+        diffV_v[i] += transport_.tDiffusion()[i] / param.t * dT_dx; // -= ?
         for (int j = 0; j < N_SORTS; ++j)
         {
-            diffV_v[i] -= transport_.diffusion()[i][j] * d_v[j];
+            diffV_v[i] += transport_.diffusion()[i][j] * d_v[j]; // -= ?
         }
     }
 }
@@ -1418,4 +1422,175 @@ const Energy& FlowMembersDc::energy() const
 const TransportCoefficients& FlowMembersDc::transport() const
 {
     return transport_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// class SolverCO2Ar
+///////////////////////////////////////////////////////////////////////////////
+
+double SolverCO2Ar::tauVVCO2CO2(const double& t, const double& p)
+{
+    double a = -26.85;
+    double b = 173.22;
+    double c = -539.74;
+    double d = 0.09645;
+    double t13 = pow(t, -1.0 / 3.0);
+    return qExp(a + b * t13 + c * qPow(t13, 2.0) + d / t13) / p * 101325;
+}
+double SolverCO2Ar::tauVTCO2CO2(const double& t, const double& n_CO2)
+{
+    return 1.0 / 2.0 / K_BOLTZMANN / n_CO2 / E_av_VT_CO2(t) *
+            Mixture::mass(0) * CvibrCO2(t);
+}
+double SolverCO2Ar::tauVTCO2Ar(const double& t, const double& n_Ar)
+{
+    return 1.0 / 2.0 / K_BOLTZMANN / n_Ar / E_av_VT_Ar(t) *
+            Mixture::mass(0) * CvibrCO2(t);
+}
+
+double SolverCO2Ar::E_av_VT_CO2(double t)
+{
+    double S = 0.0;
+    double sigma = Mixture::sigma(0);
+    for (int i = 0; i < N_VIBR_L1; i++)
+    {
+        for (int j = 0; j < N_VIBR_L2; j++)
+        {
+            for (int k = 0; k < N_VIBR_L3; k++)
+            {
+                S += S_VT2_CO2_d(i, j, k, t);
+            }
+        }
+    }
+    return qPow(2.0 * M_PI * K_BOLTZMANN * t / Mixture::reducedMass(0, 0),
+                  0.5) * M_PI * qPow(sigma, 2.0) * S;
+}
+double SolverCO2Ar::E_av_VT_Ar(double t)
+{
+    double S = 0.0;
+    double sigma = 0.5 * (Mixture::sigma(0) + Mixture::sigma(1));
+    for (int i = 0; i < N_VIBR_L1; i++)
+    {
+        for (int j = 0; j < N_VIBR_L2; j++)
+        {
+            for (int k = 0; k < N_VIBR_L3; k++)
+            {
+                if (Mixture::vEnergy(i, j, k) < DISS_ENERGY * K_BOLTZMANN)
+                {
+                    S += S_VT2_Ar_d(i, j, k, t);
+                }
+            }
+        }
+    }
+    return qPow(2.0 * M_PI * K_BOLTZMANN * t / Mixture::reducedMass(0, 1),
+                  0.5) * M_PI * qPow(sigma, 2.0) * S;
+}
+double SolverCO2Ar::S_VT2_CO2_d(int i, int j, int k, double t)
+{
+    double delta_E = (E_CO2(i, j, k) - E_CO2(i, j - 1, k)) * 1.602176e-22;
+    double dkT = delta_E / (K_BOLTZMANN * t);
+    double ekT = (E_CO2(i, j - 1, k) - E_CO2(0, 0, 0)) / (K_BOLTZMANN * t);
+    return (j + 1) * qPow(dkT, 2.0) * qExp(-ekT) * P_VT2_CO2_d(i, j, k, t) /
+            ZvibrCO2(t);
+}
+double SolverCO2Ar::S_VT2_Ar_d(int i, int j, int k, double t)
+{
+    double delta_E = (E_CO2(i, j, k) - E_CO2(i, j - 1, k)) * 1.602176e-22;
+    double dkT = delta_E / (K_BOLTZMANN * t);
+    double ekT = (E_CO2(i, j - 1, k) - E_CO2(0, 0, 0)) / (K_BOLTZMANN * t);
+    return (j + 1) * qPow(dkT, 2.0) * qExp(-ekT) * P_VT2_Ar_d(i, j, k, t) /
+            ZvibrCO2(t);
+}
+double SolverCO2Ar::E_CO2(int i, int j, int k)
+{
+    return W_W * (Mixture::o2(0) * (i + 0.5) + Mixture::o2(1) * (j + 1.0) +
+                  Mixture::o2(2) * (k + 0.5) + Mixture::ox(0) * (i + 0.5) *
+                  (i + 0.5) + Mixture::ox(1) * (i + 0.5) * (j + 1.0) +
+                  Mixture::ox(2) * (i + 0.5) * (k + 0.5) + Mixture::ox(3) *
+                  (j + 1.0) * (j + 1.0) + Mixture::ox(4) * (j + 1.0) *
+                  (k + 0.5) + Mixture::ox(5) * (k + 0.5) * (k + 0.5));
+}
+double SolverCO2Ar::P_VT2_CO2_d(int i, int j, int k, double t)
+{
+    double sigma = Mixture::sigma(0);
+    double delta_E = (E_CO2(i, j, k) - E_CO2(i, j - 1, k)) * 1.602176e-22;
+    double j_const = qPow(Mixture::a_SSH(1) * 17.5 / sigma, 2.0) * H_PLANCK *
+            (j + 1) / (8.0 * M_PI * M_PI * Mixture::m(1) * Mixture::ni(1));
+    double pVT2_CO2 = fsigm(delta_E, Mixture::reducedMass(0, 0),
+                            17.5 / sigma, t) * j_const;
+    if (pVT2_CO2 >= 1)
+    {
+        pVT2_CO2 = 0.9;
+    }
+    return pVT2_CO2;
+}
+double SolverCO2Ar::P_VT2_Ar_d(int i, int j, int k, double t)
+{
+    double sigma = 0.5 * (Mixture::sigma(0) + Mixture::sigma(1));
+    double delta_E = (E_CO2(i, j, k) - E_CO2(i, j - 1, k)) * 1.602176e-22;
+    double j_const = qPow(Mixture::a_SSH(1) * 17.5 / sigma, 2.0) * H_PLANCK *
+            (j + 1) / (8.0 * M_PI * M_PI * Mixture::m(1) * Mixture::ni(1));
+    double pVT2_Ar = fsigm(delta_E, Mixture::reducedMass(0, 1),
+                            17.5 / sigma, t) * j_const;
+    if (pVT2_Ar >= 1)
+    {
+        pVT2_Ar = 0.9;
+    }
+    return pVT2_Ar;
+}
+double SolverCO2Ar::fsigm(double delta_E, double masRed, double alpha, double t)
+{
+    double sigma1 = 3.0 * qPow((2.0 * qPow(M_PI, 4) * qPow(delta_E, 2) *
+                                masRed) / (qPow(alpha, 2) * qPow(H_PLANCK, 2) *
+                                           K_BOLTZMANN * t), 1.0 / 3.0) +
+            qAbs(delta_E) / (2.0 * K_BOLTZMANN * t);
+    double sigma2 = qPow(sigma1, 1.5) * exp(-sigma1) /
+            (1.0 - exp(-2.0 * sigma1 / 3.));
+    return sigma2 * 0.394 * qPow(8.0 * qPow(M_PI, 3) * delta_E * masRed /
+                                 qPow(alpha, 2) / qPow(H_PLANCK, 2), 2);
+}
+double SolverCO2Ar::ZvibrCO2(double t)
+{
+    double S = 0.0;
+    double ee = 0.0;
+    for (int i = 0; i < N_VIBR_L1; i++)
+    {
+        for (int j = 0; j < N_VIBR_L2; j++)
+        {
+            for (int k = 0; k < N_VIBR_L3; k++)
+            {
+                ee = Mixture::vEnergy(i, j, k);
+                if (ee < DISS_ENERGY * K_BOLTZMANN)
+                {
+                    S += (j + 1) * qExp(-ee / K_BOLTZMANN / t);
+                }
+            }
+        }
+    }
+    return S;
+}
+double SolverCO2Ar::CvibrCO2(double t)
+{
+    double ee = 0.0;
+    double s = 0.0;
+    double ss = 0.0;
+    double ppp = 0.0;
+    double z_vibr = ZvibrCO2(t);
+    for (int i = 0; i < N_VIBR_L1; ++i)
+    {
+        for (int j = 0; j < N_VIBR_L2; ++j)
+        {
+            for (int k = 0; k < N_VIBR_L3; ++k)
+            {
+                ee = Mixture::vEnergy(i, j, k);
+                if (ee < DISS_ENERGY * K_BOLTZMANN)
+                {
+                    ppp = (j + 1) * qExp(-ee / K_BOLTZMANN / t) / z_vibr;
+                    s += ee / K_BOLTZMANN / t * ppp;
+                    ss += qPow(ee / K_BOLTZMANN / t, 2.0) * ppp;
+                }
+            }
+        }
+    }
+    return ss - qPow(s, 2.0);
 }

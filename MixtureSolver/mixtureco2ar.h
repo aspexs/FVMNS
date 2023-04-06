@@ -11,7 +11,7 @@ class BorderCondition
 public:
 
     // Находит равновесные макропараметры за УВ
-    void compute(const MacroParam& lP);
+    void compute(const MacroParam& lP, const int& flag = 1);
 
     // Возвращает равновесные макропараметры за УВ
     const MacroParam& rP() const;
@@ -30,10 +30,13 @@ private:
     // Вспомогательные величины
     double alpha_;
 
+    // Уплотнение (1) или разряжение (-1)
+    int flag_;
+
 private:
 
     // Расчет вспомогательных величин
-    void initialize(const MacroParam& lP);
+    void initialize(const MacroParam& lP, const int& flag);
 
     // Возвращает дискриминант
     double computeD(const double& t);
@@ -63,11 +66,11 @@ class MixtureCo2Ar
 {
 public:
 
-    // Шаг по времени, суммарное абсолютное изменение вектора конс. переменных
-    double dt, error;
+    // Шаг по времени, время моделирования
+    double dt, time;
 
     // Хранит номер последней итерации
-    int currIter;
+    int currIter, curShockPos;
 
 public:
 
@@ -86,12 +89,8 @@ private:
 
     // Вспомогательные структуры
     QMutex mutex;
-    QVector<int> parAll_v;
-    QVector<int> parIn_v;
+    QVector<int> parN_v, parN1_v;
     TemperatureNDc computeT;
-
-    // Флаг выхода из итерационного процесса
-    bool notFinished;
 
     // Все макропараметры течения во всех точках
     QVector<MacroParam> points;
@@ -127,6 +126,12 @@ private:
 
     // Рассчитывает временной шаг по критерию Куранта-Фридрихса-Леви
     void updateDt();
+
+    // Находит производную слева или справа
+    double smartDer(const double& s0, const double& s1, const double& s2);
+
+    //
+    void findShockPos();
 };
 
 #endif // MIXTURECO2AR_H

@@ -46,8 +46,7 @@ double Mixture::epsilon(const int& i)
             return 0;
     }
 }
-double Mixture::vEnergy(const int& i, const int& j,
-                                  const int& k)
+double Mixture::vEnergy(const int& i, const int& j, const int& k)
 {
     return W_W * (1345.04 * i + 667.25 * j + 2361.71 * k);
 }
@@ -55,23 +54,150 @@ double Mixture::reducedMass(const int& i, const int& j)
 {
     return mass(i) * mass(j) / (mass(i) + mass(j));
 }
-double Mixture::tauVTCO2(const double& t, const double& p)
+double Mixture::o2(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return 1345.04e2;
+        break;
+        case 1:
+            return 667.25e2;
+        break;
+        case 2:
+            return 2361.71e2;
+        break;
+        default:
+            return 0;
+    }
+}
+double Mixture::ox(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return -3.63e2;
+        break;
+        case 1:
+            return 3.44e2;
+        break;
+        case 2:
+            return -19.28e2;
+        break;
+        case 3:
+            return -0.635e2;
+        break;
+        case 4:
+            return -12.51e2;
+        break;
+        case 5:
+            return -12.56e2;
+        break;
+        case 6:
+            return 0.775e2;
+        break;
+        default:
+            return 0;
+    }
+}
+double Mixture::m(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return 1.46e-26;
+        break;
+        case 1:
+            return 1.338e-26;
+        break;
+        case 2:
+            return 1.46e-26;
+        break;
+        default:
+            return 0;
+    }
+}
+double Mixture::ni(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return o2(0) * C_LIGHT;
+        break;
+        case 1:
+            return o2(1) * C_LIGHT;
+        break;
+        case 2:
+            return o2(2) * C_LIGHT;
+        break;
+        default:
+            return 0;
+    }
+}
+double Mixture::a_SSH(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return 0.5;
+        break;
+        case 1:
+            return 8.0 / 11.0;
+        break;
+        case 2:
+            return 0.5;
+        break;
+        default:
+            return 0;
+    }
+}
+double Mixture::a1_SSH(const int& i)
+{
+    switch (i)
+    {
+        case 0:
+            return 8.0 / 11.0;
+        break;
+        case 1:
+            return 0.5;
+        break;
+        case 2:
+            return 3.0 / 11.0;
+        break;
+        default:
+            return 0;
+    }
+}
+
+double Mixture::tauVTCO2CO2(const double& t, const double& rho_CO2)
 {
     double a = -18.19;
     double b = 40.47;
     double c = 0.0;
     double d = 0.00423;
+    double p = rho_CO2 * K_BOLTZMANN * t / Mixture::mass(0) / 101325;
     return qExp(a + b * qPow(t, -1.0 / 3.0) + c * qPow(t, -2.0 / 3.0) +
-                d * qPow(t, 1.0 / 3.0)) / p * 101325;
+                d * qPow(t, 1.0 / 3.0)) / p;
 }
-double Mixture::tauVVCO2(const double& t, const double& p)
+double Mixture::tauVTCO2Ar(const double& t, const double& rho_Ar)
+{
+    double a = -18.19;
+    double b = 40.47;
+    double c = 0.0;
+    double d = 0.00423;
+    double p = rho_Ar * K_BOLTZMANN * t / Mixture::mass(1) / 101325;
+    return qExp(a + b * qPow(t, -1.0 / 3.0) + c * qPow(t, -2.0 / 3.0) +
+                d * qPow(t, 1.0 / 3.0)) / p;
+}
+double Mixture::tauVVCO2CO2(const double& t, const double& rho_CO2)
 {
     double a = -26.85;
     double b = 173.22;
     double c = -539.74;
     double d = 0.09645;
     double t13 = pow(t, -1.0 / 3.0);
-    return qExp(a + b * t13 + c * qPow(t13, 2.0) + d / t13) / p * 101325;
+    double p = rho_CO2 * K_BOLTZMANN * t / Mixture::mass(0) / 101325;
+    return qExp(a + b * t13 + c * qPow(t13, 2.0) + d / t13) / p;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,19 +238,6 @@ void MacroParam::initialize(const double& p, const double& v, const double& t,
     this->computeRho(x_CO2);
 }
 
-MacroParam MacroParam::proceed(const MacroParam& p0)
-{
-    MacroParam p2;
-    p2.rho[0] = 2.0 * rho[0] - p0.rho[0];
-    p2.rho[1] = 2.0 * rho[1] - p0.rho[1];
-    p2.p = 2.0 * p - p0.p;
-    p2.v = 2.0 * v - p0.v;
-    p2.t = 2.0 * t - p0.t;
-    p2.t12 = 2.0 * t12 - p0.t12;
-    p2.t3 = 2.0 * t3 - p0.t3;
-    return p2;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 /// class ProgressBar
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,19 +249,19 @@ ProgressBar::ProgressBar()
     n1 = 0.0;
 }
 
-void ProgressBar::initialize(const double& n)
+void ProgressBar::initialize(const double& t)
 {
-    dx = 80.0 / n;
-    for (int i = 0; i < 80; ++i)
+    dx = 100.0 / t;
+    for (int i = 0; i < 100; ++i)
     {
         std::cout << '/';
     }
     std::cout << " -- [100%]\n";
 }
 
-void ProgressBar::update()
+void ProgressBar::update(const double& dt)
 {
-    n1 += dx;
+    n1 += dt * dx;
     if (qFloor(n1) > qFloor(n0))
     {
         n0 = n1;

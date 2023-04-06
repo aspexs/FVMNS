@@ -12,25 +12,26 @@
 #include <iostream>
 
 // Настройка используемых коэффицентов
-#define USE_V_DIFF 1
+#define USE_V_DIFF 0
 #define USE_B_VISC 1
 
 // Настройка температурного диапазона
-#define T_MAX 3000.0
+#define T_MAX 5000.0
 #define T_MIN 200.0
-#define T_NUM 5600
+#define T_NUM 9600
 
 // Малые величины для оценки точности
 #define EPSILON 1e-10
-#define DELTA_ERROR 1e-8
+#define FINISH_TIME 0.1e-3
 
-// Число ячеек сетки решателя, число итераций
-#define N_CELL 50
-#define MAX_N_ITER 5e3
+// Число ячеек сетки решателя, число итераций, положение разрыва
+#define N_CELL 601
+#define MAX_N_ITER 20000
+#define SHOCK_POS 20
 
 // Число Куранта и длина одной ячейки
-#define CFL 0.5
-#define DX 0.0005
+#define CFL 0.9
+#define DX 0.05e-3
 
 // Постоянная Больцмана
 #define K_BOLTZMANN 1.3805e-23
@@ -38,8 +39,9 @@
 // Атомная единица массы
 #define ATOMIC_MASS_UNIT 1.6605402e-27
 
-// Постоянная Планка
-#define H_PLANCK 6.6254E-34
+// Постоянная Планка и скорость света в вакууме
+#define H_PLANCK 6.6254e-34
+#define C_LIGHT 2.99792458e8
 
 // Число Авогадро
 #define N_AVOGADRO 6.0221e+23
@@ -53,9 +55,9 @@
 
 // Характеристики внутренних степеней свободы CO2
 #define N_VIBR_DEGREES 3
-#define N_VIBR_L1 40
-#define N_VIBR_L2 40
-#define N_VIBR_L3 40
+#define N_VIBR_L1 30
+#define N_VIBR_L2 65
+#define N_VIBR_L3 20
 
 // Энергия диссоциации : CO2
 #define DISS_ENERGY 64017.0
@@ -81,10 +83,17 @@ public:
     static double epsilon(const int& i);
     static double vEnergy(const int& i, const int& j, const int& k);
     static double reducedMass(const int& i, const int& j);
+    static double o2(const int& i);
+    static double ox(const int& i);
+    static double m(const int& i);
+    static double ni(const int& i);
+    static double a_SSH(const int& i);
+    static double a1_SSH(const int& i);
 
     // Времена колебательной релаксации
-    static double tauVTCO2(const double& t, const double& p);
-    static double tauVVCO2(const double& t, const double& p);
+    static double tauVTCO2CO2(const double& t, const double& rho_CO2);
+    static double tauVVCO2CO2(const double& t, const double& rho_CO2);
+    static double tauVTCO2Ar(const double& t, const double& rho_Ar);
 };
 
 // Основные макропараметры (rho[0] -> CO2, rho[1] -> Ar)
@@ -110,9 +119,6 @@ public:
     // Инициализация для равновесного случая
     void initialize(const double& p, const double& v, const double& t,
                     const double& x_CO2);
-
-    // Продолжение по гладкости
-    MacroParam proceed(const MacroParam& p0);
 };
 
 /// ProgressBar - реализует шкалу прогресса в консоли
@@ -129,10 +135,10 @@ public:
     ProgressBar();
 
     // Инициализация для равновесного случая
-    void initialize(const double& n);
+    void initialize(const double& t);
 
     // Обновить шкалу
-    void update();
+    void update(const double& dt);
 };
 
 #endif // GLOBAL_H
