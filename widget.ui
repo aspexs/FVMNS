@@ -505,6 +505,11 @@
        <string>Кислород - O2 1Т модель</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Смесь Co2-Ar</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item row="19" column="0" colspan="9">

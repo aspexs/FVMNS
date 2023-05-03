@@ -69,7 +69,19 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
     ui->comboBox_BC->clear();
     ui->comboBox_share->clear();
     gas = gas_;
-    if(gas.contains("Ar"))
+    if(gas.contains("Смесь"))
+    {
+        // понимаем, что тут молярная масса и данные для основного газа, то есть для
+        // углекислого газа, второй газ описываем в конкретном солвере
+        molMass = 44.01e-3;
+        sigma = 3.763e-10;
+        epsilonDevK = 244;
+        mass = 7.306e-26;
+        // TODO: дополнить комбобоксы для расчета
+        // FIX ME. переделать алгоритм добавления классов
+        solver = new MixtureCo2Ar;
+    }
+    else if(gas.contains("Ar"))
     {
         molMass = 39.9e-3;
         solver = new ArgonSolver;
@@ -117,8 +129,8 @@ void Widget::on_comboBox_gas_currentIndexChanged(const QString &gas_)
         ui->comboBox_additionalSolvingType->addItem("Расчет колебательной энергии E3");
         ui->comboBox_additionalSolvingType->addItem("lambda12");
         ui->comboBox_additionalSolvingType->addItem("lambda3");
-         ui->comboBox_additionalSolvingType->addItem("C_Tr");
-          ui->comboBox_additionalSolvingType->addItem("C_Rot");
+        ui->comboBox_additionalSolvingType->addItem("C_Tr");
+        ui->comboBox_additionalSolvingType->addItem("C_Rot");
 
         ui->comboBox_BC->addItem("Ренкина-Гюгонио");
         ui->comboBox_BC->addItem("Законы сохранения (Гир)");

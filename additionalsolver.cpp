@@ -747,14 +747,12 @@ QVector<Matrix> AdditionalSolver::SolveMUSCL_UL_UR(Matrix U1old, Matrix U2old, M
 
 }
 
-QVector<QVector<double> > AdditionalSolver::SEEFOForCO23T(Matrix F1, Matrix F2, Matrix F3, Matrix F4, Matrix F5, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, Matrix U5old, double dt, double delta_h, Matrix R_1, Matrix R_2)
+QVector<QVector<double> > AdditionalSolver::SEEFOForCO23T(Matrix F1, Matrix F2, Matrix F3, Matrix F4, Matrix F5,  Matrix F6, Matrix U1old, Matrix U2old, Matrix U3old, Matrix U4old, Matrix U5old, Matrix U6old, double dt, double delta_h, Matrix R_1, Matrix R_2)
 {
     int len = F1.size();
-    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1), U5new(len + 1);
+    Matrix U1new(len + 1) ,U2new (len + 1),U3new(len + 1), U4new(len + 1), U5new(len + 1),  U6new(len + 1);
     const auto temp = dt/delta_h;
-    const auto temp2 = pow(temp,2);
-    const auto temp3 = dt/delta_h/delta_h;
-    double sumDeltaF1 = 0, sumDeltaF2 = 0, sumDeltaF3 = 0, sumDeltaF4 = 0, sumDeltaF5 = 0;
+    double sumDeltaF1 = 0, sumDeltaF2 = 0, sumDeltaF3 = 0, sumDeltaF4 = 0, sumDeltaF5 = 0,  sumDeltaF6 = 0;
     for(int i = 1 ; i < len; i++)
     {
         const auto deltaF1 = temp*(F1[i]  - F1[i-1]);
@@ -762,20 +760,24 @@ QVector<QVector<double> > AdditionalSolver::SEEFOForCO23T(Matrix F1, Matrix F2, 
         const auto deltaF3 = temp*(F3[i]  - F3[i-1]);
         const auto deltaF4 = temp*(F4[i]  - F4[i-1]);
         const auto deltaF5 = temp*(F5[i]  - F5[i-1]);
+        const auto deltaF6 = temp*(F6[i]  - F6[i-1]);
         sumDeltaF1 += deltaF1;
         sumDeltaF2 += deltaF2;
         sumDeltaF3 += deltaF3;
         sumDeltaF4 += deltaF4;
         sumDeltaF5 += deltaF5;
+        sumDeltaF6 += deltaF6;
 
         U1new[i] =  U1old[i] - deltaF1;
         U2new[i] =  U2old[i] - deltaF2;
         U3new[i] =  U3old[i] - deltaF3;
-        U4new[i] =  U4old[i] - deltaF4 + dt*R_1[i];
-        U5new[i] =  U5old[i] - deltaF5 + dt*R_2[i];
+        U4new[i] =  U4old[i] - deltaF4;
+        U5new[i] =  U5old[i] - deltaF5 + dt*R_1[i];
+        U6new[i] =  U6old[i] - deltaF6 + dt*R_2[i];
 
     }
-    return {U1new, U2new, U3new, U4new, U5new, {sumDeltaF1+sumDeltaF2+sumDeltaF3+sumDeltaF4}};
+    return {U1new, U2new, U3new, U4new, U5new, U6new,
+        {sumDeltaF1 + sumDeltaF2 + sumDeltaF3 + sumDeltaF4 + sumDeltaF5 + sumDeltaF6}};
 }
 
 

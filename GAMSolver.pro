@@ -25,6 +25,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        MixtureSolvers/mixtureco2ar.cpp \
         abstaractsolver.cpp \
         additionalsolver.cpp \
         additionalsolverforco2.cpp \
@@ -42,6 +43,7 @@ SOURCES += \
         widget.cpp
 
 HEADERS += \
+        MixtureSolvers/mixtureco2ar.h \
         abstaractsolver.h \
         additionalSolverForOxygen.h \
         additionalsolver.h \
