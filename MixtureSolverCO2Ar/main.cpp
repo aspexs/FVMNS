@@ -3,15 +3,12 @@
 #include <QTextStream>
 #include <QString>
 #include <QRandomGenerator>
-#include "mixtureco2ar.h"
+#include "mixture.h"
 
-//const double P2 = 1.195 * 101325;
-//const double T2 = 955;
-//const double P1 = 0.417 * 101325; //0.0851 * 101325;
-const double P0 = 0.0851 * 101325;
-const double T0 = 293;
-const double P1 = 0.417 * 101325;
-const double P2 = 1.195 * 101325;
+//const double P0 = 0.0835 * 101325;
+//const double T0 = 297; //293;
+//const double P1 = 0.415 * 101325;
+//const double P2 = 1.195 * 101325; //1.195 * 101325;
 
 // Запись данных в файл
 void writeToFile(const QString& name, const QVector<QVector<double>> table)
@@ -78,29 +75,39 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     MixtureCo2Ar solver;
-    BorderCondition bc0, bc1;
-    MacroParam data0 = optimizer(600, 700, P0, T0, P1);
-    bc0.compute(data0);
-    MacroParam data1 = optimizer(690, 790, P1, bc0.rP().t, P2);
-    bc1.compute(data1);
+//    BorderCondition bc0, bc1;
+//    MacroParam data0 = optimizer(600, 700, P0, T0, P1);
+//    bc0.compute(data0);
+//    MacroParam data1 = optimizer(700, 800, P1, bc0.rP().t, P2);
+//    bc1.compute(data1);
 
-    double v = data1.v + bc0.rP().v - data0.v;
-    qDebug() << v << bc1.rP().v << bc1.rP().t << bc1.rP().p;
-
-    // solver.initialize(MacroParam(66.6, 1370, 300, 0.999));
-    solver.initialize(data1);
+    // Прямая УВ
+    solver.initialize(MacroParam(66.6, 1370, 300, 0.3), "energy_data.dat", 3);
     solver.solve();
-    writeToFile("macro_params.txt", solver.saveMacroParams());
-    writeToFile("F.txt", solver.saveF());
-    writeToFile("hlleF.txt", solver.saveHlleF());
-    writeToFile("U.txt", solver.saveU());
-    writeToFile("R.txt", solver.saveR());
+    writeToFile("data_CO2AR_3T.txt", solver.saveMacroParams());
 
-    std::cout << "\n > Time           : " << solver.time;
-    std::cout << "\n > dt             : " << solver.dt;
-    std::cout << "\n > Shock position : " << solver.curShockPos;
-    std::cout << "\n > Iterations     : " << solver.currIter << " / "
-              << MAX_N_ITER << '\n';
+    std::cout << "\n > Time        [s]   : " << solver.time;
+    std::cout << "\n > dt          [s]   : " << solver.dt;
+    std::cout << "\n > Iterations  [-]   : " << solver.currIter << " / "
+              << MAX_N_ITER << "\n\n";
+
+//    TemperatureNDc temp;
+//    MacroParam p(66.6, 1370, 4000, 0.0001);
+//    EnergyDc energy;
+//    p.t = 4000;
+//    p.t12 = 4000;
+//    energy.initialize();
+//    energy.compute(p);
+//    // temp.initialize(T_MIN, T_MAX, T_NUM, Y_NUM);
+//    temp.readFromFile("energy_data.dat", T_NUM, Y_NUM);
+//    // temp.writeToFile("energy_data.dat", T_NUM, Y_NUM);
+
+//    temp.compute(p, energy.vE12(), energy.vE3(), energy.fullE());
+//    qDebug() << temp.T() << temp.T12() << temp.T3();
+//    temp.compute(p, energy.vE12() + energy.vE3(), energy.fullE());
+//    qDebug() << temp.T() << temp.T12() << temp.T3();
+//    temp.compute(p, energy.fullE());
+//    qDebug() << temp.T() << temp.T12() << temp.T3();
 
     return 0;
 }

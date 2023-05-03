@@ -12,7 +12,7 @@
 #include <iostream>
 
 // Настройка используемых коэффицентов
-#define USE_V_DIFF 0
+#define USE_V_DIFF 1
 #define USE_B_VISC 1
 
 // Настройка температурного диапазона
@@ -22,16 +22,18 @@
 
 // Малые величины для оценки точности
 #define EPSILON 1e-10
-#define FINISH_TIME 0.1e-3
+#define FINISH_TIME 0.7e-3
 
 // Число ячеек сетки решателя, число итераций, положение разрыва
-#define N_CELL 601
-#define MAX_N_ITER 20000
+#define N_CELL 101
+#define MAX_N_ITER 120000
 #define SHOCK_POS 20
 
-// Число Куранта и длина одной ячейки
+// Число Куранта, длина одной ячейки, множитель длины ячейки с номером i = 0
 #define CFL 0.9
-#define DX 0.05e-3
+#define DX 0.1e-3
+#define GRID_L 0.10
+#define DEGREE 8.0
 
 // Постоянная Больцмана
 #define K_BOLTZMANN 1.3805e-23
@@ -54,19 +56,14 @@
 #define N_POLYATOMIC_SORTS 1
 
 // Характеристики внутренних степеней свободы CO2
-#define N_VIBR_DEGREES 3
-#define N_VIBR_L1 30
-#define N_VIBR_L2 65
-#define N_VIBR_L3 20
-
-// Энергия диссоциации : CO2
-#define DISS_ENERGY 64017.0
+#define N_VIBR_DEGREES 1
+#define N_VIBR_L 35
 
 // Настройка метода Гаусса
 #define N_MAX 30
 
 // Число уравнений системы
-#define SYSTEM_ORDER 6
+#define SYSTEM_ORDER 5
 
 /// Структура данных смеси СO2-Ar:
 /// 1) Спектроскопические данные для молекулы СО2;
@@ -81,19 +78,12 @@ public:
     static double mass(const int& i);
     static double sigma(const int& i);
     static double epsilon(const int& i);
-    static double vEnergy(const int& i, const int& j, const int& k);
+    static double vEnergy(const int& i);
     static double reducedMass(const int& i, const int& j);
-    static double o2(const int& i);
-    static double ox(const int& i);
-    static double m(const int& i);
-    static double ni(const int& i);
-    static double a_SSH(const int& i);
-    static double a1_SSH(const int& i);
 
     // Времена колебательной релаксации
-    static double tauVTCO2CO2(const double& t, const double& rho_CO2);
-    static double tauVVCO2CO2(const double& t, const double& rho_CO2);
-    static double tauVTCO2Ar(const double& t, const double& rho_Ar);
+    static double tauVTO2O2(const double& t, const double& rho_O2);
+    static double tauVTO2O(const double& t, const double& rho_O);
 };
 
 // Основные макропараметры (rho[0] -> CO2, rho[1] -> Ar)
@@ -103,7 +93,7 @@ public:
 
     // Основные макропараметры (не независимые)
     QVector<double> rho;
-    double p, v, t, t12, t3;
+    double p, v, t, tv;
 
 public:
 
@@ -111,14 +101,14 @@ public:
     // Инициализация по умолчанию и для равновесного случая
     MacroParam();
     MacroParam(const double& p, const double& v, const double& t,
-               const double& x_CO2);
+               const double& x_O2);
 
-    // Инициализация плотностей, зная {p, t, x_CO2 in [0, 1]}
-    void computeRho(const double& x_CO2);
+    // Инициализация плотностей, зная {p, t, x_O2 in [0, 1]}
+    void computeRho(const double& x_O2);
 
     // Инициализация для равновесного случая
     void initialize(const double& p, const double& v, const double& t,
-                    const double& x_CO2);
+                    const double& x_O2);
 };
 
 /// ProgressBar - реализует шкалу прогресса в консоли

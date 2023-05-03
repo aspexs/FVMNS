@@ -242,6 +242,9 @@ public:
     // Расчет всех значений
     virtual void compute(const MacroParam& param, const double& e12,
                          const double& e3, const double& e) = 0;
+    virtual void compute(const MacroParam& param, const double& ev,
+                         const double& e) = 0;
+    virtual void compute(const MacroParam& param, const double& e) = 0;
 
     // Доступ к соответствующим полям
     const double& T12() const;
@@ -257,15 +260,20 @@ class TemperatureNDc : public Temperature
 protected:
 
     // Таблицы для интерполяции
-    QVector<double> vT12_v;
-    QVector<double> vT3_v;
+    QVector<double> vT_v;
+    QVector<double> y_v;
     QVector<double> vE12_v;
     QVector<double> vE3_v;
-    double dT;
+    QVector<double> vE_v;
+    QVector<QVector<double>> fullE_v;
+    double dT, dY;
 
     // Расчет всех значений температуры
     void calcT12(const double& e12);
     void calcT3(const double& e3);
+    void calcTv(const double& ev);
+    void calcT(const MacroParam& p, const double& e);
+    void calcT(const MacroParam& p, const double& e, const double& ev);
     void calcT(const MacroParam& p, const double& e, const double& e12,
                const double& e3);
 
@@ -275,12 +283,22 @@ public:
     TemperatureNDc() = default;
     virtual ~TemperatureNDc() = default;
 
-    // Выделение памяти, обновление значений
-    void initialize(const double& t0, const double& t1, const int& n);
+    // Выделение памяти, обновление значений, расчет
+    void initialize(const double& t0, const double& t1, const int& nT,
+                    const int& nY);
 
-    // Расчет всех значений
+    // Выделение памяти, обновление значений, чтение из файла
+    void readFromFile(const QString& name, const int& nT, const int& nY);
+
+    // Расчет всех значений в приближениях: 3T, 2T, 1T
     virtual void compute(const MacroParam& param, const double& e12,
                          const double& e3, const double& e);
+    virtual void compute(const MacroParam& param, const double& ev,
+                         const double& e);
+    virtual void compute(const MacroParam& param, const double& e);
+
+    // Запись таблиц в файл
+    void writeToFile(const QString& name, const int& nT, const int& nY);
 };
 
 /// BracketIntegrals - основной родительский класс, содержит результаты
@@ -511,9 +529,9 @@ public:
 
     // Расчет всех значений
     virtual void compute(const MacroParam& param, const QVector<double>& dx_dx,
-                         const double& dp_dx, const double& dT_dx,
-                         const double& dT12_dx, const double& dT3_dx,
-                         const double& dv_dx) = 0;
+                         const double& dlnp_dx, const double& dT_dx,
+                         const double& dlnT_dx, const double& dT12_dx,
+                         const double& dT3_dx, const double& dv_dx) = 0;
 
     // Доступ к соответствующим полям
     const double& trQ() const;
@@ -541,8 +559,8 @@ protected:
 
     // Расчет соответствующих потоков энергии, энтальпии, компоненты тензора
     void computeD(const MacroParam& param, const QVector<double>& dx_dx,
-                  const double& dp_dx);
-    void computeDiffV(const MacroParam& param, const double& dT_dx);
+                  const double& dlnp_dx);
+    void computeDiffV(const double& dlnT_dx);
     void computeH(const MacroParam& param);
     void computeDiffQ(const MacroParam& param);
     void computeFullQ(const double& dT_dx, const double& dT12_dx,
@@ -560,9 +578,9 @@ public:
 
     // Расчет всех значений
     virtual void compute(const MacroParam& param, const QVector<double>& dx_dx,
-                         const double& dp_dx, const double& dT_dx,
-                         const double& dT12_dx, const double& dT3_dx,
-                         const double& dv_dx);
+                         const double& dlnp_dx, const double& dT_dx,
+                         const double& dlnT_dx, const double& dT12_dx,
+                         const double& dT3_dx, const double& dv_dx);
     const Energy& energy() const;
     const TransportCoefficients& transport() const;
 };

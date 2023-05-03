@@ -1,7 +1,7 @@
 #ifndef MIXTURECO2AR_H
 #define MIXTURECO2AR_H
 
-#include "transport_m_2.h"
+#include "transport.h"
 
 /// BorderCondition - инструмент расчета макропараметров за ударной волной.
 /// Требует информации о характеристиках потока перед УВ, использует для расчета
@@ -70,13 +70,14 @@ public:
     double dt, time;
 
     // Хранит номер последней итерации
-    int currIter, curShockPos;
+    int currIter, shockPos;
 
 public:
 
     MixtureCo2Ar();
 
-    void initialize(const MacroParam& lP);
+    void initialize(const MacroParam& lP, const QString& name,
+                    const int& numT = 3);
     void solve();
 
     QVector<QVector<double>> saveMacroParams();
@@ -91,12 +92,13 @@ private:
     QMutex mutex;
     QVector<int> parN_v, parN1_v;
     TemperatureNDc computeT;
+    int model;
 
     // Все макропараметры течения во всех точках
     QVector<MacroParam> points;
 
-    // Скорость звука и показатель адиабаты
-    QVector<double> a, k;
+    // Скорость звука и показатель адиабаты, длины ячеек
+    QVector<double> a, k, dx;
 
     // Консервативные переменные, поточные члены, релаксационные члены
     QVector<QVector<double>> U, F, R;
@@ -127,10 +129,7 @@ private:
     // Рассчитывает временной шаг по критерию Куранта-Фридрихса-Леви
     void updateDt();
 
-    // Находит производную слева или справа
-    double smartDer(const double& s0, const double& s1, const double& s2);
-
-    //
+    // Находит положение наибольшего разрыва
     void findShockPos();
 };
 

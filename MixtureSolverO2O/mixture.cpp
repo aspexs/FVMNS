@@ -1,4 +1,4 @@
-#include "mixtureco2ar.h"
+#include "mixture.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// class BorderCondition
@@ -49,8 +49,7 @@ double BorderCondition::computeF(const double& t)
     // Временный набор макропараметров
     MacroParam p;
     p.t = t;
-    p.t12 = t;
-    p.t3 = t;
+    p.tv = t;
     p.rho[0] = y0_;
     p.rho[1] = y1_;
 
@@ -92,10 +91,9 @@ void BorderCondition::computeT()
         }
     }
 
-    // Обновляем значения температуры на правой границе T = T12 = T3
+    // Обновляем значения температуры на правой границе T = Tv
     rP_.t = 0.5 * (minT + maxT);
-    rP_.t12 = rP_.t;
-    rP_.t3 = rP_.t;
+    rP_.tv = rP_.t;
 }
 
 void BorderCondition::computeP()
@@ -116,27 +114,28 @@ void BorderCondition::computeV()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// class MixtureCo2Ar
+/// class MixtureO2O
 ///////////////////////////////////////////////////////////////////////////////
 
-MixtureCo2Ar::MixtureCo2Ar()
+MixtureO2O::MixtureO2O()
 {
-    dt = 0.0;
-    time = 0.0;
-    currIter = 0;
-    curShockPos = SHOCK_POS;
-
     U.resize(SYSTEM_ORDER);
     F.resize(SYSTEM_ORDER);
     R.resize(SYSTEM_ORDER);
     hlleF.resize(SYSTEM_ORDER);
 }
 
-void MixtureCo2Ar::initialize(const MacroParam& lP)
+void MixtureO2O::initialize(const MacroParam& lP)
 {
     // Расчет равновесных значений за УВ
     BorderCondition bc;
     bc.compute(lP);
+
+    // Повторное использование
+    dt = 0.0;
+    time = 0.0;
+    currIter = 0;
+    shockPos = 0;
 
     // Изменение размеров массивов
     for (int i = 0; i < SYSTEM_ORDER; ++i)
@@ -149,6 +148,16 @@ void MixtureCo2Ar::initialize(const MacroParam& lP)
     points.resize(N_CELL);
     k.fill(0.0, N_CELL);
     a.fill(0.0, N_CELL);
+    dx.fill(0.0, N_CELL);
+
+    // Инициализация массива длин ячеек
+    double alpha = (DEGREE + 1.0) * GRID_L / qPow(N_CELL, (DEGREE + 1.0)) / DX;
+    for(int i = 0; i < N_CELL; i++)
+    {
+        // dx[i] = DX * ((DX_MUL - 1.0) * qPow(double(GRID_POS - i) /
+        //                                    GRID_POS, DEGREE) + 1.0);
+        dx[i] = DX * (1.0 + alpha * qPow(i, DEGREE));
+    }
 
     // Подготовка векторов для распараллеливания
     for(int i = 0; i < N_CELL; i++)
@@ -181,8 +190,7 @@ void MixtureCo2Ar::initialize(const MacroParam& lP)
             U[2][i] = (lP.rho[0] + lP.rho[1]) * lP.v;
             U[3][i] = (lP.rho[0] + lP.rho[1]) *
                     (lE.fullE() + qPow(lP.v, 2.0) / 2.0);
-            U[4][i] = lP.rho[0] * lE.vE12();
-            U[5][i] = lP.rho[0] * lE.vE3();
+            U[4][i] = lP.rho[0] * lE.vE();
             points[i] = lP;
         }
         else
@@ -192,14 +200,13 @@ void MixtureCo2Ar::initialize(const MacroParam& lP)
             U[2][i] = (bc.rP().rho[0] + bc.rP().rho[1]) * bc.rP().v;
             U[3][i] = (bc.rP().rho[0] + bc.rP().rho[1]) *
                     (rE.fullE() + qPow(bc.rP().v, 2.0) / 2.0);
-            U[4][i] = bc.rP().rho[0] * rE.vE12();
-            U[5][i] = bc.rP().rho[0] * rE.vE3();
+            U[4][i] = bc.rP().rho[0] * rE.vE();
             points[i] = bc.rP();
         }
     }
 }
 
-void MixtureCo2Ar::solve()
+void MixtureO2O::solve()
 {
     // Готовим progress bar
     ProgressBar bar;
@@ -222,7 +229,6 @@ void MixtureCo2Ar::solve()
 
         // Возврат к основным макропараметрам
         updateMacroParam();
-        // findShockPos();
 
         // Обновляем progress bar, счетчик и таймер
         bar.update(dt);
@@ -230,15 +236,17 @@ void MixtureCo2Ar::solve()
         time += dt;
     }
     updateAK();
+    findShockPos();
 }
 
-void MixtureCo2Ar::computeF()
+void MixtureO2O::computeF()
 {
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calc = [this](int& i)
     {
         // Временные переменные
         MacroParam p0, p1, p2;
+        double temp_dx = 0.0;
 
         // Забираем известные макропараметры в (.)-ах [i-1], [i], [i+1]
         mutex.lock();
@@ -248,14 +256,17 @@ void MixtureCo2Ar::computeF()
             case 0:
                 p0 = p1;
                 p2 = points[i + 1];
+                temp_dx = 1.5 * dx[i] + 0.5 * dx[i + 1];
                 break;
             case N_CELL - 1:
                 p0 = points[i - 1];
                 p2 = p1;
+                temp_dx = 1.5 * dx[i] + 0.5 * dx[i - 1];
                 break;
             default:
                 p0 = points[i - 1];
                 p2 = points[i + 1];
+                temp_dx = dx[i] + 0.5 * (dx[i - 1] + dx[i + 1]);
                 break;
         }
         mutex.unlock();
@@ -271,18 +282,18 @@ void MixtureCo2Ar::computeF()
                               n2[1] / (n2[0] + n2[1])};
 
         // Рассчитываем производные в точке i
-        double dv_dx = (p2.v - p0.v) / (2.0 * DX);
-        double dT_dx = (p2.t - p0.t) / (2.0 * DX);
-        double dT12_dx = (p2.t12 - p0.t12) / (2.0 * DX);
-        double dT3_dx = (p2.t3 - p0.t3) / (2.0 * DX);
-        double dp_dx = (p2.p - p0.p) / (2.0 * DX);
-        QVector<double> dx_dx = {(x2[0] - x0[0]) / (2.0 * DX),
-                                 (x2[1] - x0[1]) / (2.0 * DX)};
+        double dv_dx = (p2.v - p0.v) / temp_dx;
+        double dT_dx = (p2.t - p0.t) / temp_dx;
+        double dlnT_dx = (qLn(p2.t) - qLn(p0.t)) / temp_dx;
+        double dTv_dx = (p2.tv - p0.tv) / temp_dx;
+        double dlnp_dx = (qLn(p2.p) - qLn(p0.p)) / temp_dx;
+        QVector<double> dx_dx = {(x2[0] - x0[0]) / temp_dx,
+                                 (x2[1] - x0[1]) / temp_dx};
 
         // Расчет поточных членов
         FlowMembersDc computer;
         computer.initialize();
-        computer.compute(p1, dx_dx, dp_dx, dT_dx, dT12_dx, dT3_dx, dv_dx);
+        computer.compute(p1, dx_dx, dlnp_dx, dT_dx, dlnT_dx, dTv_dx, dv_dx);
 
         // Обновляем значения вектора поточных членов в (.) [i]
         mutex.lock();
@@ -296,7 +307,7 @@ void MixtureCo2Ar::computeF()
     futureWatcher.waitForFinished();
 }
 
-void MixtureCo2Ar::computeHlleF()
+void MixtureO2O::computeHlleF()
 {
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calc = [this](int& i)
@@ -348,19 +359,19 @@ void MixtureCo2Ar::computeHlleF()
     futureWatcher.waitForFinished();
 }
 
-void MixtureCo2Ar::step()
+void MixtureO2O::step()
 {
     // Находим ошибку, обновляем вектор консервативных переменных
     for (int j = 0; j < SYSTEM_ORDER; ++j)
     {
         for (int i = 1; i < N_CELL - 1; ++i)
         {
-            U[j][i] += (R[j][i] - (hlleF[j][i] - hlleF[j][i - 1]) / DX) * dt;
+            U[j][i] += (R[j][i] - (hlleF[j][i] - hlleF[j][i - 1]) / dx[i]) * dt;
         }
     }
 }
 
-void MixtureCo2Ar::computeR()
+void MixtureO2O::computeR()
 {
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calc = [this](int& i)
@@ -373,37 +384,31 @@ void MixtureCo2Ar::computeR()
         point = points[i];
         mutex.unlock();
 
-        // Расчет времени релаксации
-        double tauVTCO2 = Mixture::tauVTCO2CO2(point.t, point.rho[0]);
-        double tauVTAr = Mixture::tauVTCO2Ar(point.t, point.rho[1]);
-        double tauVVCO2 = Mixture::tauVVCO2CO2(point.t, point.rho[0]);
+        // Расчет времен релаксации VT при столкновениях O2-O2, O2-O
+        double tauVTO2O2 = Mixture::tauVTO2O2(point.t, point.rho[0]);
+        double tauVTO2O = Mixture::tauVTO2O(point.t, point.rho[1]);
 
         // Расчет значений колебательных энергий
-        EnergyDc et, et12, et3;
+        EnergyDc et, etv;
         et.initialize();
-        et12.initialize();
-        et3.initialize();
-        et.compute(point.t, point.t);
-        et12.compute(point.t12, point.t12);
-        et3.compute(point.t3, point.t3);
+        etv.initialize();
+        et.compute(point.t);
+        etv.compute(point.tv);
 
         // Расчет скоростей релаксации
-        double r1 = point.rho[0] * ((et.vE12() - et12.vE12()) *
-                    (1.0 / tauVTCO2 + 1.0 / tauVTAr) +
-                    (et3.vE12() - et12.vE12()) * 2.0 / tauVVCO2);
-        double r2 = point.rho[0] * (et12.vE3() - et3.vE3()) * 2.0 / tauVVCO2;
+        double r = point.rho[0] * (et.vE() - etv.vE()) *
+                (1.0 / tauVTO2O2 + 1.0 / tauVTO2O);
 
         // Возвращаем новые значения
         mutex.lock();
-        R[4][i] = r1;
-        R[5][i] = r2;
+        R[4][i] = r;
         mutex.unlock();
     };
     futureWatcher.setFuture(QtConcurrent::map(parN_v, calc));
     futureWatcher.waitForFinished();
 }
 
-void MixtureCo2Ar::updateMacroParam()
+void MixtureO2O::updateMacroParam()
 {
     // Без кинетической энергии
     double U3 = 0.0;
@@ -415,18 +420,17 @@ void MixtureCo2Ar::updateMacroParam()
         points[i].rho[0] = U[0][i];
         points[i].rho[1] = U[1][i];
         points[i].v = U[2][i] / (U[0][i] + U[1][i]);
-        computeT.compute(points[i], U[4][i] / U[0][i], U[5][i] / U[0][i],
+        computeT.compute(points[i], U[4][i] / U[0][i],
                 U3 / (U[0][i] + U[1][i]));
         points[i].t = computeT.T();
-        points[i].t12 = computeT.T12();
-        points[i].t3 = computeT.T3();
+        points[i].tv = computeT.Tv();
         points[i].p = K_BOLTZMANN * computeT.T() *
                 (points[i].rho[0] / Mixture::mass(0) +
                 points[i].rho[1] / Mixture::mass(1));
     }
 }
 
-void MixtureCo2Ar::updateAK()
+void MixtureO2O::updateAK()
 {
     QFutureWatcher<void> futureWatcher;
     const std::function<void(int&)> calc = [this](int& i)
@@ -455,16 +459,16 @@ void MixtureCo2Ar::updateAK()
     futureWatcher.waitForFinished();
 }
 
-void MixtureCo2Ar::updateDt()
+void MixtureO2O::updateDt()
 {
     // Вспомогательная скорость
     double temp_t = 0.0;
-    double min_t  = 1.0;
+    double min_t = 1.0;
 
     // Находим максимальную скорость распространения возмущения в потоке
     for (int i = 1; i < N_CELL - 1; ++i)
     {
-        temp_t = DX / (a[i] + points[i].v);
+        temp_t = dx[i] / (a[i] + points[i].v);
         if (temp_t < min_t)
         {
             min_t = temp_t;
@@ -475,27 +479,67 @@ void MixtureCo2Ar::updateDt()
     dt = CFL * min_t;
 }
 
-QVector<QVector<double>> MixtureCo2Ar::saveMacroParams()
+void MixtureO2O::findShockPos()
 {
+    // Текущий и наибольший разрыв
+    double maxGap = 0.0;
+    double curGap = 0.0;
+
+    // Находим положение наибольшего разрыва
+    for (int i = 1; i < N_CELL - 1; ++i)
+    {
+        curGap = qAbs(points[i+1].p - points[i-1].p);
+        if (curGap > maxGap)
+        {
+            maxGap = curGap;
+            shockPos = i;
+        }
+    }
+}
+
+QVector<QVector<double>> MixtureO2O::getMacroParams()
+{
+    // Поиск длины свободного пробега
+    double n0 = points[0].rho[0] / Mixture::mass(0);
+    double n1 = points[0].rho[1] / Mixture::mass(1);
+    double x0 = n0 / (n0 + n1);
+    double d = x0 * Mixture::sigma(0) + (1.0 - x0) * Mixture::sigma(1);
+    double L = K_BOLTZMANN * points[0].t / (qSqrt(2) * M_PI *
+                                            qPow(d, 2.0) * points[0].p);
+
+    // Подготовка таблицы
     QVector<QVector<double>> table;
-    table.resize(10);
+    table.resize(11);
+
+    // Заполняем таблицу
     for (int i = 0; i < N_CELL; ++i)
     {
-        table[0].push_back(DX * (i - SHOCK_POS));
+        table[0].push_back(0.0);
         table[1].push_back(points[i].rho[0]);
         table[2].push_back(points[i].rho[1]);
         table[3].push_back(points[i].p);
         table[4].push_back(points[i].v);
         table[5].push_back(points[i].t);
-        table[6].push_back(points[i].t12);
-        table[7].push_back(points[i].t3);
-        table[8].push_back(k[i]);
-        table[9].push_back(a[i]);
+        table[6].push_back(points[i].tv);
+        table[7].push_back(k[i]);
+        table[8].push_back(a[i]);
+        table[9].push_back(dx[i]);
+        table[10].push_back(0.0);
+    }
+    for (int i = 1; i < N_CELL; ++i)
+    {
+        table[0][i] = table[0][i - 1] + 0.5 * (dx[i] + dx[i - 1]);
+    }
+    double ds = table[0][shockPos];
+    for (int i = 0; i < N_CELL; ++i)
+    {
+        table[0][i] -= ds;
+        table[10][i] = table[0][i] / L;
     }
     return table;
 }
 
-QVector<QVector<double>> MixtureCo2Ar::saveU()
+QVector<QVector<double>> MixtureO2O::getU()
 {
     QVector<QVector<double>> table;
     for (int i = 0; i < SYSTEM_ORDER; ++i)
@@ -505,7 +549,7 @@ QVector<QVector<double>> MixtureCo2Ar::saveU()
     return table;
 }
 
-QVector<QVector<double>> MixtureCo2Ar::saveF()
+QVector<QVector<double>> MixtureO2O::getF()
 {
     QVector<QVector<double>> table;
     for (int i = 0; i < SYSTEM_ORDER; ++i)
@@ -515,7 +559,7 @@ QVector<QVector<double>> MixtureCo2Ar::saveF()
     return table;
 }
 
-QVector<QVector<double>> MixtureCo2Ar::saveHlleF()
+QVector<QVector<double>> MixtureO2O::getHlleF()
 {
     QVector<QVector<double>> table;
     for (int i = 0; i < SYSTEM_ORDER; ++i)
@@ -525,7 +569,7 @@ QVector<QVector<double>> MixtureCo2Ar::saveHlleF()
     return table;
 }
 
-QVector<QVector<double>> MixtureCo2Ar::saveR()
+QVector<QVector<double>> MixtureO2O::getR()
 {
     QVector<QVector<double>> table;
     for (int i = 0; i < SYSTEM_ORDER; ++i)
@@ -535,39 +579,3 @@ QVector<QVector<double>> MixtureCo2Ar::saveR()
     return table;
 }
 
-double MixtureCo2Ar::smartDer(const double& s0, const double& s1,
-                              const double& s2)
-{
-    // Левая и правая производные
-    double lD = (s1 - s0) / DX;
-    double rD = (s2 - s1) / DX;
-
-    // Выбираем наименьшую по модулю производную
-//    if (qAbs(lD) > qAbs(rD))
-//    {
-//        return rD;
-//    }
-//    else
-//    {
-//        return lD;
-//    }
-    return 0.5 * (lD + rD);
-}
-
-void MixtureCo2Ar::findShockPos()
-{
-    // Вспомогательные переменные
-    double max_dt  = 0.0;
-    double temp_dt = 0.0;
-
-    // Проходим по участку сетки до первоначального положения УВ
-    for (int i = 0; i <= SHOCK_POS; ++i)
-    {
-        temp_dt = (points[i + 1].t - points[i].t) / DX;
-        if (max_dt < temp_dt)
-        {
-            max_dt = temp_dt;
-            curShockPos = i;
-        }
-    }
-}
